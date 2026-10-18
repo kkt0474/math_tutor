@@ -1,0 +1,1248 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>唱唱爱数学</title>
+    <!-- 官方 GeoGebra Web 渲染引擎 -->
+    <script src="https://www.geogebra.org/apps/deployggb.js"></script>
+    <!-- KaTeX 数学公式渲染 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <!-- 直接以脚本方式引入初始数据，彻底规避 file:// 协议 CORS 限制 -->
+    <script id="lessonDataScript" src="lesson.js"></script>
+    <style>
+        :root {
+            --bg-dark: #090d16;
+            --panel-bg: #131c2e;
+            --panel-border: #26354d;
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+            --accent: #0284c7;
+            --accent-light: #38bdf8;
+            --gold: #facc15;
+            --emerald: #10b981;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: var(--bg-dark);
+            color: var(--text-main);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            height: 54px;
+            background: rgba(19, 28, 46, 0.92);
+            border-bottom: 1px solid var(--panel-border);
+            padding: 0 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            backdrop-filter: blur(8px);
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 700;
+            font-size: 17px;
+            color: #fff;
+        }
+
+        .workspace-badge {
+            font-size: 12px;
+            font-weight: 500;
+            padding: 3px 10px;
+            border-radius: 999px;
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .app-layout {
+            flex: 1;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 360px;
+            gap: 16px;
+            max-width: 1440px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 16px 20px;
+        }
+
+        @media (max-width: 1080px) {
+            .app-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* 左侧主舞台 */
+        .main-stage {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            min-width: 0;
+            position: relative;
+        }
+
+        /* 左侧全局处理中遮罩层 */
+        .loading-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(9, 13, 22, 0.86);
+            backdrop-filter: blur(6px);
+            border-radius: 10px;
+            z-index: 40;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding-top: 160px;
+            gap: 16px;
+            border: 1px solid var(--accent-light);
+        }
+
+        .loading-overlay.active {
+            display: flex;
+        }
+
+        .spinner {
+            width: 52px;
+            height: 52px;
+            border: 4px solid rgba(56, 189, 248, 0.2);
+            border-top-color: var(--accent-light);
+            border-radius: 50%;
+            animation: spin 0.9s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .loading-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .loading-sub {
+            font-size: 14px;
+            color: var(--accent-light);
+            text-align: center;
+            max-width: 420px;
+            line-height: 1.6;
+        }
+
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .q-tabs {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .q-btn {
+            padding: 8px 16px;
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            color: var(--text-muted);
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .q-btn.active {
+            background: var(--accent);
+            color: #fff;
+            border-color: var(--accent-light);
+            box-shadow: 0 0 12px rgba(2, 132, 199, 0.4);
+        }
+
+        #ggb-wrapper {
+            width: 100%;
+            height: 460px;
+            background: #ffffff;
+            border: 2px solid var(--panel-border);
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #ggb-container {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* 交互式几何标注工具栏 */
+        .annot-bar {
+            position: absolute;
+            top: 10px;
+            right: 12px;
+            z-index: 25;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(15, 23, 42, 0.88);
+            backdrop-filter: blur(8px);
+            border: 1px solid var(--panel-border);
+            border-radius: 8px;
+            padding: 5px 8px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+        }
+
+        .annot-label {
+            font-size: 12px;
+            font-weight: 700;
+            color: #94a3b8;
+            margin-right: 2px;
+            user-select: none;
+        }
+
+        .annot-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            background: rgba(30, 41, 59, 0.85);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            color: #cbd5e1;
+            padding: 5px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            user-select: none;
+        }
+
+        .annot-btn:hover {
+            background: rgba(51, 65, 85, 0.95);
+            color: #fff;
+            border-color: var(--accent-light);
+        }
+
+        .annot-btn.active {
+            background: linear-gradient(135deg, rgba(2, 132, 199, 0.3), rgba(37, 99, 235, 0.3));
+            color: #38bdf8;
+            border-color: #38bdf8;
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.35);
+        }
+
+        .annot-btn.annot-clear:hover {
+            border-color: #f43f5e;
+            color: #fb7185;
+        }
+
+        .annot-icon {
+            font-size: 13px;
+        }
+
+        /* 画板浮动操作提示 */
+        .annot-tip {
+            position: absolute;
+            bottom: 14px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 26;
+            background: rgba(15, 23, 42, 0.94);
+            border: 1px solid var(--accent-light);
+            color: #e2e8f0;
+            padding: 7px 18px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.55);
+            display: none;
+            pointer-events: none;
+            white-space: nowrap;
+            animation: fadeIn 0.15s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translate(-50%, 6px); }
+            to { opacity: 1; transform: translate(-50%, 0); }
+        }
+
+        .subtitle-card {
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-left: 4px solid var(--accent-light);
+            padding: 14px 18px;
+            border-radius: 8px;
+            min-height: 86px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .sub-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .sub-step {
+            font-size: 13px;
+            color: var(--accent-light);
+            font-weight: 700;
+        }
+
+        .sub-model {
+            font-size: 13px;
+            color: var(--gold);
+            font-weight: 700;
+            background: rgba(250, 204, 21, 0.12);
+            padding: 2px 10px;
+            border-radius: 4px;
+        }
+
+        .sub-text {
+            font-size: 15px;
+            line-height: 1.7;
+            color: #e2e8f0;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-top: 2px;
+        }
+
+        .sub-line {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+            padding: 5px 10px;
+            background: rgba(15, 23, 42, 0.45);
+            border-radius: 6px;
+            border-left: 2.5px solid rgba(56, 189, 248, 0.45);
+        }
+
+        .sub-line.is-think-line {
+            background: rgba(16, 185, 129, 0.08);
+            border-left: 3px solid #34d399;
+        }
+
+        .sub-line.is-goal-line {
+            background: rgba(250, 204, 21, 0.06);
+            border-left: 3px solid var(--gold);
+        }
+
+        .sub-idx {
+            color: var(--accent-light);
+            font-weight: 700;
+            font-size: 14px;
+            flex-shrink: 0;
+            user-select: none;
+        }
+
+        .sub-line.is-think-line .sub-idx {
+            color: #34d399;
+        }
+
+        .sub-line.is-goal-line .sub-idx {
+            color: var(--gold);
+        }
+
+        /* 启发式辅助线思维引导标签样式 */
+        .think-hl {
+            background: rgba(16, 185, 129, 0.18);
+            color: #6ee7b7;
+            border: 1px solid rgba(52, 211, 153, 0.4);
+            padding: 1px 7px;
+            border-radius: 4px;
+            font-weight: 700;
+            margin-right: 4px;
+        }
+
+        /* 本步核心目标/结论高亮荧光笔样式 */
+        .goal-hl {
+            background: linear-gradient(90deg, rgba(250, 204, 21, 0.25), rgba(245, 158, 11, 0.2));
+            color: #fde047;
+            border: 1px solid rgba(250, 204, 21, 0.45);
+            padding: 2px 8px;
+            border-radius: 5px;
+            font-weight: 700;
+            box-shadow: 0 0 10px rgba(250, 204, 21, 0.12);
+        }
+
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .ctrl-btn {
+            padding: 9px 20px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 14px;
+            background: var(--accent);
+            color: #fff;
+            transition: all 0.15s;
+        }
+
+        .ctrl-btn:hover:not(:disabled) {
+            background: #0369a1;
+        }
+
+        .ctrl-btn:disabled {
+            background: #1e293b;
+            color: #475569;
+            cursor: not-allowed;
+        }
+
+        /* 中考满分规范步骤卡片 */
+        .solution-card {
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 8px;
+            padding: 18px 22px;
+            margin-top: 4px;
+        }
+
+        .solution-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 12px;
+            margin-bottom: 14px;
+            border-bottom: 1px solid var(--panel-border);
+        }
+
+        .solution-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--gold);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .solution-body {
+            font-size: 15px;
+            line-height: 1.8;
+            color: #e2e8f0;
+        }
+
+        .solution-body h3,
+        .solution-body h4 {
+            color: var(--accent-light);
+            margin: 12px 0 6px 0;
+        }
+
+        .solution-body ul,
+        .solution-body ol {
+            padding-left: 22px;
+            margin: 6px 0;
+        }
+
+        .solution-body li {
+            margin-bottom: 4px;
+        }
+
+        /* 右侧上传与控制侧边栏 */
+        .side-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .card {
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 10px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .card-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .upload-zone {
+            border: 2px dashed #3b4f6b;
+            border-radius: 8px;
+            padding: 20px 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: rgba(15, 23, 42, 0.5);
+            position: relative;
+        }
+
+        .upload-zone:hover,
+        .upload-zone.dragover {
+            border-color: var(--accent-light);
+            background: rgba(56, 189, 248, 0.06);
+        }
+
+        .upload-zone input[type="file"] {
+            display: none;
+        }
+
+        .upload-hint {
+            font-size: 13px;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        #previewImg {
+            max-width: 100%;
+            max-height: 220px;
+            border-radius: 6px;
+            margin-top: 10px;
+            display: none;
+            border: 1px solid var(--panel-border);
+        }
+
+        label.field-label {
+            font-size: 12px;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        select,
+        textarea {
+            width: 100%;
+            background: #090d16;
+            border: 1px solid var(--panel-border);
+            color: #fff;
+            border-radius: 6px;
+            padding: 8px 10px;
+            font-size: 13px;
+            font-family: inherit;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 64px;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: none;
+            background: linear-gradient(135deg, #0284c7, #2563eb);
+            color: #fff;
+            font-weight: 700;
+            font-size: 15px;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .submit-btn:hover:not(:disabled) {
+            opacity: 0.92;
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .status-box {
+            font-size: 13px;
+            line-height: 1.55;
+            padding: 10px 12px;
+            border-radius: 6px;
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid var(--panel-border);
+            color: #cbd5e1;
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <div class="brand">
+            <span>📐 唱唱爱数学-微课工作台</span>
+            <span class="workspace-badge">🔒 math-tutor-workspace 沙箱隔离</span>
+        </div>
+        <div class="header-actions">
+            <span id="engineStatus" style="font-size:12px; color:#34d399;">🟢 Antigravity Pro 引擎已连接</span>
+        </div>
+    </header>
+
+    <div class="app-layout">
+        <!-- 左侧：GeoGebra 画板 + 字幕 + 中考满分步骤 -->
+        <div class="main-stage" id="mainStage">
+            <!-- 处理中全屏遮罩层 -->
+            <div class="loading-overlay" id="loadingOverlay">
+                <div class="spinner"></div>
+                <div class="loading-title" id="loadingTitle">正在调用 Antigravity 模型解析几何题...</div>
+                <div class="loading-sub" id="loadingSub">
+                    步骤 1/3：识别几何图形与题目已知条件<br>
+                    步骤 2/3：匹配初中经典几何模型（一线三等角 / 将军饮马 / 手拉手...）<br>
+                    步骤 3/3：推算精确解析坐标并生成分步 GeoGebra 板书指令
+                </div>
+            </div>
+
+            <div class="top-bar">
+                <div class="q-tabs" id="qTabs"></div>
+            </div>
+
+            <!-- GeoGebra 交互画板容器 -->
+            <div id="ggb-wrapper">
+                <!-- 交互式几何标注工具栏 -->
+                <div class="annot-bar" id="annotBar">
+                    <span class="annot-label">✏️ 标记工具:</span>
+                    <button class="annot-btn" id="btnEqualSeg" onclick="toggleAnnotTool('segEqual')" title="点击两条线段，为它们打上相同的几何双划线等长标记(||)">
+                        <span class="annot-icon">|=|</span> 标记等长边
+                    </button>
+                    <button class="annot-btn" id="btnEqualAng" onclick="toggleAnnotTool('angEqual')" title="点击角或相交边，打上等角圆弧标记(⌒)">
+                        <span class="annot-icon">⌒</span> 标记等角
+                    </button>
+                    <button class="annot-btn annot-clear" id="btnClearAnnot" onclick="clearUserAnnotations()" title="清空当前画板上的所有手动标注">
+                        <span class="annot-icon">🧹</span> 清空标记
+                    </button>
+                </div>
+
+                <!-- 悬浮操作指引提示 -->
+                <div class="annot-tip" id="annotTip"></div>
+
+                <div id="ggb-container"></div>
+            </div>
+
+            <!-- 分步思维字幕卡片 -->
+            <div class="subtitle-card">
+                <div class="sub-header">
+                    <span class="sub-step" id="subStep">正在加载题目...</span>
+                    <span class="sub-model" id="subModel"></span>
+                </div>
+                <div class="sub-text" id="subText">正在初始化 GeoGebra 引擎与几何模型数据...</div>
+            </div>
+
+            <!-- 步骤切换控制栏 -->
+            <div class="controls">
+                <button class="ctrl-btn" id="prevBtn" onclick="moveStep(-1)">◀ 上一步</button>
+                <span id="stepProgress" style="font-size:14px; color:#94a3b8; font-weight:600;"></span>
+                <button class="ctrl-btn" id="nextBtn" onclick="moveStep(1)">下一步板书 ▶</button>
+            </div>
+
+            <!-- 中考满分规范证明全文 -->
+            <div class="solution-card">
+                <div class="solution-header">
+                    <div class="solution-title">📝 中考满分规范解答（含几何模型化归）</div>
+                    <span style="font-size:12px; color:#94a3b8;" id="curQuestionLabel"></span>
+                </div>
+                <div class="solution-body" id="solutionBody">
+                    加载中...
+                </div>
+            </div>
+        </div>
+
+        <!-- 右侧：上传题目图片与控制栏 -->
+        <aside class="side-panel">
+            <div class="card">
+                <div class="card-title">
+                    <span>📤 上传几何题目图片</span>
+                    <span style="font-size:12px; color:#38bdf8; font-weight:normal;">支持 Ctrl/Cmd+V 粘贴</span>
+                </div>
+
+                <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
+                    <input type="file" id="fileInput" accept="image/*" onchange="handleFileSelect(event)">
+                    <div style="font-size:26px; margin-bottom:6px;">🖼️</div>
+                    <div class="upload-hint">
+                        <b>点击选择图片</b>、拖拽到此<br>或直接按 <b>Cmd + V</b> 粘贴题目截图
+                    </div>
+                    <img id="previewImg" alt="题目预览">
+                </div>
+
+                <div>
+                    <label class="field-label">选择 Antigravity 模型</label>
+                    <select id="modelSelect" style="margin-top:4px;">
+                        <option value="gemini-3.8-flash-medium">Gemini 3.8 Flash (Medium) - 极速推荐</option>
+                        <option value="gemini-3.8-flash-high" selected>Gemini 3.8 Flash (High) - 高精度</option>
+                        <option value="gemini-4-argon-medium">Gemini 4 Argon (Medium) - 深度压轴推理</option>
+                        <option value="claude-sonnet-5-5-medium">Claude Sonnet 5.5 (Medium)</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="field-label">补充讲题要求（可选）</label>
+                    <textarea id="noteInput" style="margin-top:4px;"
+                        placeholder="例如：第(2)问请用截长补短法；或者重点讲解辅助线是怎么想到的..."></textarea>
+                </div>
+
+                <button class="submit-btn" id="submitBtn" onclick="submitProblem()">✨ 提交并自动生成微课</button>
+
+                <div class="status-box" id="statusBox"></div>
+            </div>
+        </aside>
+    </div>
+
+    <script>
+        let ggbApp = null;
+        let lesson = null;
+        let curQIdx = 0;
+        let curStepIdx = 0;
+        let currentImageBase64 = "";
+
+        let activeAnnotTool = null; // 'segEqual' | 'angEqual' | null
+        let pendingSeg = null;
+        let pendingPoints = [];
+        let equalPairIdx = 0;
+        let equalAngIdx = 0;
+
+        const EQUAL_STYLES = [
+            { color: "#F59E0B", decor: 2, label: "双划线 ||" }, // 暖橙色
+            { color: "#EC4899", decor: 3, label: "三划线 |||" }, // 玫粉色
+            { color: "#10B981", decor: 1, label: "单划线 |" },  // 翠绿色
+            { color: "#8B5CF6", decor: 2, label: "双划线 ||" }, // 紫色
+            { color: "#06B6D4", decor: 3, label: "三划线 |||" }  // 青色
+        ];
+
+        const ANG_STYLES = [
+            { color: "#EC4899", decor: 1, label: "单圆弧 ⌒" },
+            { color: "#F59E0B", decor: 2, label: "双圆弧 ⌒⌒" },
+            { color: "#10B981", decor: 3, label: "三圆弧 ⌒⌒⌒" }
+        ];
+
+        function initAnnotationListeners() {
+            if (!ggbApp) return;
+            try {
+                window.onGgbObjectClicked = function (objName) {
+                    handleGgbObjectClick(objName);
+                };
+                ggbApp.registerClickListener("onGgbObjectClicked");
+            } catch (e) {
+                try {
+                    ggbApp.registerClickListener(handleGgbObjectClick);
+                } catch (err) {}
+            }
+        }
+
+        function toggleAnnotTool(tool) {
+            if (activeAnnotTool === tool) {
+                deactivateAnnotTool();
+                return;
+            }
+            activeAnnotTool = tool;
+            pendingSeg = null;
+            pendingPoints = [];
+            updateAnnotToolbarUI();
+
+            if (tool === 'segEqual') {
+                showAnnotTip("👉 请在画板上点击第 1 条线段（例如线段 AC）");
+            } else if (tool === 'angEqual') {
+                showAnnotTip("👉 请在画板上点击已有的角，或依次点击 3 个顶点标记角");
+            }
+        }
+
+        function deactivateAnnotTool() {
+            activeAnnotTool = null;
+            pendingSeg = null;
+            pendingPoints = [];
+            updateAnnotToolbarUI();
+            hideAnnotTip();
+        }
+
+        function updateAnnotToolbarUI() {
+            const segBtn = document.getElementById('btnEqualSeg');
+            const angBtn = document.getElementById('btnEqualAng');
+            if (segBtn) segBtn.classList.toggle('active', activeAnnotTool === 'segEqual');
+            if (angBtn) angBtn.classList.toggle('active', activeAnnotTool === 'angEqual');
+        }
+
+        function showAnnotTip(text, duration = 0) {
+            const tip = document.getElementById('annotTip');
+            if (!tip) return;
+            tip.innerHTML = text;
+            tip.style.display = 'block';
+            if (duration > 0) {
+                setTimeout(() => {
+                    if (tip.innerHTML === text) {
+                        tip.style.display = 'none';
+                    }
+                }, duration);
+            }
+        }
+
+        function hideAnnotTip() {
+            const tip = document.getElementById('annotTip');
+            if (tip) tip.style.display = 'none';
+        }
+
+        function getFriendlyObjName(name) {
+            if (!name) return "";
+            if (name.startsWith("seg")) {
+                return name.replace(/^seg/, '').replace(/_.*$/, '');
+            }
+            if (name.startsWith("ang")) {
+                return "∠" + name.replace(/^ang/, '').replace(/_.*$/, '');
+            }
+            return name;
+        }
+
+        function handleGgbObjectClick(objName) {
+            if (!activeAnnotTool || !ggbApp || !objName) return;
+            const objType = ggbApp.getObjectType(objName);
+
+            if (activeAnnotTool === 'segEqual') {
+                if (objType !== 'segment' && objType !== 'line') {
+                    if (objType === 'point') {
+                        showAnnotTip("💡 请点击具体的【线段】中间位置，而不是顶点");
+                    } else if (objType === 'polygon') {
+                        showAnnotTip("💡 请点击具体的【线段边缘】（如 AC 或 BC）");
+                    }
+                    return;
+                }
+
+                if (!pendingSeg) {
+                    pendingSeg = objName;
+                    ggbApp.evalCommand(`SetColor(${objName}, "#F59E0B")`);
+                    ggbApp.evalCommand(`SetLineThickness(${objName}, 5)`);
+                    const name = getFriendlyObjName(objName);
+                    showAnnotTip(`👉 已选中第 1 条线段【${name}】，请点击与之相等的第 2 条线段`);
+                } else {
+                    if (objName === pendingSeg) {
+                        showAnnotTip("⚠️ 不能重复选择同一条线段，请点击另一条相等线段");
+                        return;
+                    }
+                    const st = EQUAL_STYLES[equalPairIdx % EQUAL_STYLES.length];
+                    ggbApp.evalCommand(`SetColor(${pendingSeg}, "${st.color}")`);
+                    ggbApp.evalCommand(`SetColor(${objName}, "${st.color}")`);
+                    ggbApp.evalCommand(`SetLineThickness(${pendingSeg}, 4)`);
+                    ggbApp.evalCommand(`SetLineThickness(${objName}, 4)`);
+                    ggbApp.evalCommand(`SetDecoration(${pendingSeg}, ${st.decor})`);
+                    ggbApp.evalCommand(`SetDecoration(${objName}, ${st.decor})`);
+
+                    const name1 = getFriendlyObjName(pendingSeg);
+                    const name2 = getFriendlyObjName(objName);
+                    showAnnotTip(`🎉 成功标记等长边：线段【${name1}】=【${name2}】(${st.label})`);
+                    equalPairIdx++;
+                    pendingSeg = null;
+
+                    setTimeout(() => {
+                        if (activeAnnotTool === 'segEqual') {
+                            showAnnotTip("👉 继续点击两条线段标记下一组相等边，或再次点击按钮退出");
+                        }
+                    }, 2500);
+                }
+            } else if (activeAnnotTool === 'angEqual') {
+                if (objType === 'angle') {
+                    const st = ANG_STYLES[equalAngIdx % ANG_STYLES.length];
+                    ggbApp.evalCommand(`SetColor(${objName}, "${st.color}")`);
+                    ggbApp.evalCommand(`SetDecoration(${objName}, ${st.decor})`);
+                    ggbApp.evalCommand(`SetLineThickness(${objName}, 4)`);
+                    showAnnotTip(`🎉 已标记等角：【${getFriendlyObjName(objName)}】(${st.label})`);
+                    equalAngIdx++;
+                } else if (objType === 'point') {
+                    pendingPoints.push(objName);
+                    if (pendingPoints.length === 1) {
+                        showAnnotTip(`👉 已选第 1 个点【${objName}】，请继续点击顶点`);
+                    } else if (pendingPoints.length === 2) {
+                        showAnnotTip(`👉 已选顶点【${pendingPoints[1]}】，请点击最后一点完成角定义`);
+                    } else if (pendingPoints.length === 3) {
+                        const angName = "userAng_" + Date.now();
+                        const st = ANG_STYLES[equalAngIdx % ANG_STYLES.length];
+                        ggbApp.evalCommand(`${angName} = Angle(${pendingPoints[0]}, ${pendingPoints[1]}, ${pendingPoints[2]})`);
+                        ggbApp.evalCommand(`SetColor(${angName}, "${st.color}")`);
+                        ggbApp.evalCommand(`SetDecoration(${angName}, ${st.decor})`);
+                        ggbApp.evalCommand(`ShowLabel(${angName}, false)`);
+                        showAnnotTip(`🎉 成功标记角：∠${pendingPoints[0]}${pendingPoints[1]}${pendingPoints[2]}`);
+                        equalAngIdx++;
+                        pendingPoints = [];
+                    }
+                } else {
+                    showAnnotTip("💡 请点击已有的角，或依次点击 3 个顶点");
+                }
+            }
+        }
+
+        function clearUserAnnotations() {
+            deactivateAnnotTool();
+            equalPairIdx = 0;
+            equalAngIdx = 0;
+            if (lesson && ggbApp) {
+                applyStep(curStepIdx);
+            }
+            showAnnotTip("🧹 已清空画板上的所有手动标记", 2000);
+        }
+
+        const ggbParameters = {
+            "id": "ggbApplet",
+            "width": 880,
+            "height": 460,
+            "showToolBar": false,
+            "showMenuBar": false,
+            "showAlgebraInput": false,
+            "showResetIcon": false,
+            "enableLabelDrags": false,
+            "enableShiftDragZoom": true,
+            "enableRightClick": false,
+            "showToolBarHelp": false,
+            "errorDialogsActive": false,
+            "useBrowserForJS": false,
+            "appletOnLoad": function (api) {
+                ggbApp = api;
+                initAnnotationListeners();
+                if (typeof window.LESSON_DATA !== 'undefined' && window.LESSON_DATA) {
+                    loadLessonData(window.LESSON_DATA);
+                } else {
+                    document.getElementById('subText').innerText = "请在右侧上传几何题图片，点击【提交并自动生成微课】开始。";
+                }
+            }
+        };
+
+        const applet = new GGBApplet(ggbParameters, '5.0');
+        window.onload = function () {
+            applet.inject('ggb-container');
+            setupUploadHandlers();
+            checkServerStatus();
+        };
+
+        const API_BASE = window.location.protocol.startsWith('http') ? window.location.origin : 'http://127.0.0.1:8765';
+
+        async function checkServerStatus() {
+            try {
+                const res = await fetch(`${API_BASE}/api/status`);
+                const data = await res.json();
+                const el = document.getElementById('engineStatus');
+                if (data.ok && data.connected) {
+                    el.innerText = `🟢 Antigravity Pro 已直连 (${data.user})`;
+                    el.style.color = '#34d399';
+                } else {
+                    el.innerText = `🟡 本地服务已启动，请保持 Antigravity 开启`;
+                    el.style.color = '#facc15';
+                }
+            } catch (e) {
+                const el = document.getElementById('engineStatus');
+                el.innerText = `🔴 本地后台未启动 (请运行 python3 server.py)`;
+                el.style.color = '#f87171';
+            }
+        }
+
+        function loadLessonData(data) {
+            lesson = data;
+            initTabs();
+            loadQuestion(0);
+        }
+
+        function initTabs() {
+            const tabs = document.getElementById('qTabs');
+            tabs.innerHTML = '';
+            lesson.questions.forEach((q, idx) => {
+                const btn = document.createElement('button');
+                btn.className = 'q-btn' + (idx === 0 ? ' active' : '');
+                btn.innerText = q.title;
+                btn.onclick = () => loadQuestion(idx);
+                tabs.appendChild(btn);
+            });
+        }
+
+        function loadQuestion(qIdx) {
+            curQIdx = qIdx;
+            curStepIdx = 0;
+            document.querySelectorAll('.q-btn').forEach((b, i) => b.classList.toggle('active', i === qIdx));
+            applyStep(0);
+            renderSolutionMarkdown();
+        }
+
+        function applyStep(stepIdx) {
+            if (!ggbApp || !lesson) return;
+            pendingSeg = null;
+            pendingPoints = [];
+            hideAnnotTip();
+            curStepIdx = stepIdx;
+            const q = lesson.questions[curQIdx];
+            const step = q.steps[curStepIdx];
+
+            ggbApp.reset();
+            if (lesson.viewConfig) {
+                const cfg = lesson.viewConfig;
+                if (cfg.bounds) {
+                    ggbApp.setCoordSystem(cfg.bounds.xmin, cfg.bounds.xmax, cfg.bounds.ymin, cfg.bounds.ymax);
+                }
+                ggbApp.setAxesVisible(cfg.hasAxes ?? true, cfg.hasAxes ?? true);
+            }
+
+            for (let i = 0; i <= curStepIdx; i++) {
+                const cmds = q.steps[i].ggbCommands || [];
+                cmds.forEach(cmd => {
+                    ggbApp.evalCommand(cmd);
+                });
+            }
+
+            // 技术兜底：自动隐藏所有角度(angle)、线段(segment)、多边形(polygon)的冗余文字标签，仅保留顶点的字母标签，彻底防止角度度数重叠
+            try {
+                const allNames = ggbApp.getAllObjectNames() || [];
+                allNames.forEach(objName => {
+                    const objType = ggbApp.getObjectType(objName);
+                    if (objType === 'angle' || objType === 'segment' || objType === 'polygon' || objType === 'conic' || objType === 'ray' || objType === 'line') {
+                        ggbApp.setLabelVisible(objName, false);
+                    }
+                });
+            } catch (e) { }
+
+            document.getElementById('subStep').innerText = `${q.title} · 步骤 ${curStepIdx + 1}/${q.steps.length}：${step.name}`;
+            const modelEl = document.getElementById('subModel');
+            if (step.modelName && step.modelName.trim()) {
+                modelEl.style.display = 'inline-block';
+                modelEl.innerText = `💡 思路：${step.modelName}`;
+            } else {
+                modelEl.style.display = 'none';
+            }
+            document.getElementById('subText').innerHTML = formatMathAndMarkdown(step.explanation || '', true);
+            document.getElementById('stepProgress').innerText = `步骤 ${curStepIdx + 1} / ${q.steps.length}`;
+            document.getElementById('prevBtn').disabled = (curStepIdx === 0);
+            document.getElementById('nextBtn').disabled = (curStepIdx === q.steps.length - 1);
+        }
+
+        function moveStep(n) {
+            const max = lesson.questions[curQIdx].steps.length - 1;
+            const target = Math.max(0, Math.min(max, curStepIdx + n));
+            if (target !== curStepIdx) {
+                applyStep(target);
+            }
+        }
+
+        function formatMathAndMarkdown(md, isSubtitle = false) {
+            if (!md) return "";
+            // 自动修复因单反斜杠转义导致的控制字符破坏（如 \triangle 被解析为 Tab+riangle）
+            md = md
+                .replace(/\t(riangle|ext|imes|heta|herefore|au)/g, '\\t$1')
+                .replace(/\x08(ecause|egin|eta|ar)/g, '\\b$1')
+                .replace(/\f(rac|orall)/g, '\\f$1')
+                .replace(/\r(ight|ho)/g, '\\r$1');
+            const mathBlocks = [];
+            md = md.replace(/\$\$([\s\S]*?)\$\$/g, (_, m) => {
+                mathBlocks.push({ display: true, tex: m });
+                return `@@MATH_BLOCK_${mathBlocks.length - 1}@@`;
+            });
+            md = md.replace(/\$([^\$\n]+?)\$/g, (_, m) => {
+                mathBlocks.push({ display: false, tex: m });
+                return `@@MATH_INLINE_${mathBlocks.length - 1}@@`;
+            });
+
+            let html = "";
+            if (isSubtitle) {
+                // 如果在分步字幕中没有显式使用 ==...== 标记，自动匹配最后一句“因此/故/从而/可得/所以/目标是...”结论句进行高亮兜底
+                if (!/==[\s\S]+?==/.test(md)) {
+                    md = md.replace(/((?:因此|所以|从而|由此可得|故|即证|最终|本步目标[：:]?)[^。！\n]+[。！]?)$/m, '==$1==');
+                }
+
+                // 保护 ==...== 块，避免在句号切分时被拆断
+                const goalBlocks = [];
+                md = md.replace(/==([\s\S]+?)==/g, (_, g) => {
+                    goalBlocks.push(g);
+                    return `@@GOAL_BLOCK_${goalBlocks.length - 1}@@`;
+                });
+
+                // 若文本已包含显式换行符 \n 则直接按行切分；否则按句号/感叹号智能切分
+                let mergedParts = [];
+                if (md.includes('\n')) {
+                    mergedParts = md.split(/\n+/).map(s => s.trim()).filter(Boolean);
+                } else {
+                    const rawParts = md
+                        .replace(/([。！])\s*/g, '$1\n')
+                        .split(/\n+/)
+                        .map(s => s.trim())
+                        .filter(Boolean);
+                    for (let i = 0; i < rawParts.length; i++) {
+                        const cur = rawParts[i];
+                        const visLen = cur.replace(/@@MATH_(?:BLOCK|INLINE)_\d+@@/g, 'XXXX').length;
+                        if (visLen < 14 && !cur.includes('@@GOAL_BLOCK_') && i + 1 < rawParts.length) {
+                            rawParts[i + 1] = cur + ' ' + rawParts[i + 1];
+                        } else {
+                            mergedParts.push(cur);
+                        }
+                    }
+                }
+
+                const circledNums = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧'];
+                html = mergedParts.map((part, idx) => {
+                    const hasGoal = part.includes('@@GOAL_BLOCK_');
+                    const isThink = /辅助线是怎么想到的|辅助线思考|辅助线作法动机|辅助线思路/.test(part);
+                    const cleaned = part
+                        .replace(/^[①②③④⑤⑥⑦⑧⑨⑩▸•\-\d\.、\s]+/, '')
+                        .replace(/【(?:💡\s*)?(?:辅助线是怎么想到的[？?]?|辅助线思考|辅助线作法动机|辅助线思路)】[：:]?/g, '<span class="think-hl">💡 辅助线是怎么想到的？</span>')
+                        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                        .replace(/@@GOAL_BLOCK_(\d+)@@/g, (_, gIdx) => `<span class="goal-hl">🎯 ${goalBlocks[Number(gIdx)]}</span>`);
+                    const badge = isThink ? '💡' : (circledNums[idx] || `${idx + 1}.`);
+                    const rowClass = hasGoal ? ' is-goal-line' : (isThink ? ' is-think-line' : '');
+                    return `<div class="sub-line${rowClass}"><span class="sub-idx">${badge}</span><span>${cleaned}</span></div>`;
+                }).join('');
+            } else {
+                html = md
+                    .replace(/==([\s\S]+?)==/g, '<span class="goal-hl">🎯 $1</span>')
+                    .replace(/^#### (.*$)/gim, '<h4>$1</h4>')
+                    .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                    .replace(/^\* (.*$)/gim, '<li>$1</li>')
+                    .replace(/^\d+\. (.*$)/gim, '<li>$1</li>')
+                    .replace(/\n/g, '<br>');
+            }
+
+            html = html.replace(/@@MATH_(BLOCK|INLINE)_(\d+)@@/g, (_, type, idx) => {
+                const item = mathBlocks[Number(idx)];
+                if (window.katex) {
+                    try {
+                        return katex.renderToString(item.tex, {
+                            displayMode: item.display,
+                            throwOnError: false
+                        });
+                    } catch (e) {
+                        return item.tex;
+                    }
+                }
+                return item.tex;
+            });
+            return html;
+        }
+
+        function renderSolutionMarkdown() {
+            const q = lesson.questions[curQIdx];
+            const container = document.getElementById('solutionBody');
+            document.getElementById('curQuestionLabel').innerText = q.title;
+            container.innerHTML = formatMathAndMarkdown(q.solutionMarkdown || "暂无该问详细步骤记录。");
+        }
+
+        function setupUploadHandlers() {
+            const zone = document.getElementById('uploadZone');
+            zone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                zone.classList.add('dragover');
+            });
+            zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+            zone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                zone.classList.remove('dragover');
+                if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                    readFileAsBase64(e.dataTransfer.files[0]);
+                }
+            });
+
+            window.addEventListener('paste', (e) => {
+                const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+                for (let item of items) {
+                    if (item.type.indexOf('image') === 0) {
+                        readFileAsBase64(item.getAsFile());
+                        break;
+                    }
+                }
+            });
+        }
+
+        function handleFileSelect(e) {
+            if (e.target.files && e.target.files[0]) {
+                readFileAsBase64(e.target.files[0]);
+            }
+        }
+
+        function readFileAsBase64(file) {
+            const reader = new FileReader();
+            reader.onload = (evt) => {
+                currentImageBase64 = evt.target.result;
+                const img = document.getElementById('previewImg');
+                img.src = currentImageBase64;
+                img.style.display = 'inline-block';
+                showStatus("✅ 题目图片已就绪，点击上方按钮即可全自动生成微课！", "#38bdf8");
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function showStatus(html, color = "#cbd5e1") {
+            const box = document.getElementById('statusBox');
+            box.style.display = 'block';
+            box.style.borderColor = color;
+            box.innerHTML = html;
+        }
+
+        async function submitProblem() {
+            if (!currentImageBase64) {
+                showStatus("⚠️ 请先选择、拖拽或按 Cmd+V 粘贴一张几何题目图片！", "#facc15");
+                return;
+            }
+
+            const btn = document.getElementById('submitBtn');
+            const overlay = document.getElementById('loadingOverlay');
+            const modelSelect = document.getElementById('modelSelect');
+            const model = modelSelect.value;
+            const modelName = modelSelect.options[modelSelect.selectedIndex].text;
+            const note = document.getElementById('noteInput').value.trim();
+
+            // 1. 左侧画板立即进入“处理中”状态
+            btn.disabled = true;
+            btn.innerText = "⏳ AI 正在全力推演中...";
+            document.getElementById('loadingTitle').innerText = `正在调用 ${modelName.split(' - ')[0]} 推演几何模型...`;
+            overlay.classList.add('active');
+            showStatus("🔄 后台正在自动调用 Antigravity 模型识别题目并生成微课数据，预计耗时 15~30 秒...", "#38bdf8");
+
+            try {
+                const res = await fetch(`${API_BASE}/api/solve`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        imageBase64: currentImageBase64,
+                        model: model,
+                        note: note
+                    })
+                });
+                const data = await res.json();
+
+                if (data.ok && data.lessonData) {
+                    // 2. 生成结束，前台自动渲染微课程内容！
+                    window.LESSON_DATA = data.lessonData;
+                    loadLessonData(data.lessonData);
+                    showStatus(`🎉 微课生成成功！已为您自动加载全部 ${data.lessonData.questions.length} 个小问的动态板书与规范解析。`, "#10b981");
+                } else {
+                    showStatus(`❌ 生成失败：${data.error || '未知错误'}`, "#f43f5e");
+                }
+            } catch (err) {
+                showStatus(`❌ 无法连接后台服务 (${API_BASE})，请确认主机已在终端运行 <code>python3 server.py</code>`, "#f43f5e");
+            } finally {
+                overlay.classList.remove('active');
+                btn.disabled = false;
+                btn.innerText = "✨ 提交并自动生成微课";
+            }
+        }
+    </script>
+</body>
+
+</html>
