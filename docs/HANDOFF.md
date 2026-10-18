@@ -54,6 +54,8 @@
    - 模型在 JSON 字符串中有时会把 LaTeX 写作单反斜杠 `\triangle`, `\text`, `\because`, `\frac`，这会被 `json.loads` 错误转义成 Tab、Backspace、FormFeed 等 ASCII 控制字符。已在 `server.py` 和 `viewer.html` 中加入了双重前置正规化修复。
 5. **GeoGebra 角度度数文字重叠**：
    - GeoGebra 生成 `Angle(...)` 时默认会显示角度名称和具体度数，多角重叠时极其凌乱。已在前端注入技术兜底：自动遍历画板对象执行 `ggbApp.setLabelVisible(objName, false)`，仅保留直角方框与圆弧，隐藏文字度数。
+6. **防范角命名同义反复与等号自指废话（如 $\angle B = \angle ABC$）**：
+   - 模型在总结高亮结论时容易将单字母代号与三字母全称划等号。已在 `.antigravity/AGENTS.md` 与 `server.py` 的提示词中确立铁律：严禁单字母与三字母角自身划等号，除题干要求外统一使用三字母标准记法，等号两侧必须具备几何定理转化依据。
 
 ---
 

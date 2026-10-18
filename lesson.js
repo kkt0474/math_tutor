@@ -54,9 +54,9 @@ window.LESSON_DATA = {
           ]
         },
         {
-          "name": "由旋转性质锁定等腰 △ABD，求底角 ∠B = 15°",
+          "name": "由旋转性质锁定等腰 △ABD，求底角 ∠ABC = 15°",
           "modelName": "旋转构造等腰三角形模型",
-          "explanation": "【💡 解题思路是怎么想到的？】要求 $\\angle E$，根据旋转全等可知 $\\angle E = \\angle ACB$，目标转化为求 $\\triangle ABC$ 中的角；而在 $\\triangle ABC$ 中已知 $\\angle BAC = 100^\\circ$，只要求出底角 $\\angle B$ 即可；观察图形，点 $B$ 绕点 $A$ 旋转得到点 $D$，天然满足 $AB = AD$ 且夹角为旋转角，因此我们聚焦于等腰 $\\triangle ABD$！\n因为 $\\triangle ABC$ 绕点 $A$ 逆时针旋转得到 $\\triangle ADE$，所以对应边相等 $AB = AD$。\n因为对应边 $AB$ 与 $AD$ 的夹角等于旋转角，所以 $\\angle BAD = 150^\\circ$。\n因为在等腰 $\\triangle ABD$ 中，$AB = AD$ 且顶角 $\\angle BAD = 150^\\circ$，所以两底角相等且 $\\angle ABD = \\frac{180^\\circ - 150^\\circ}{2} = 15^\\circ$。\n因为点 $B, C, D$ 在同一直线上，所以角 $\\angle ABC$ 与 $\\angle ABD$ 是同一个角，即 $\\angle ABC = 15^\\circ$。\n结合以上推导，==所以求得底角 $\\angle B = \\angle ABC = 15^\\circ$==",
+          "explanation": "【💡 解题思路是怎么想到的？】要求 $\\angle E$，根据旋转全等可知 $\\angle E = \\angle ACB$，目标转化为求 $\\triangle ABC$ 中的角；而在 $\\triangle ABC$ 中已知 $\\angle BAC = 100^\\circ$，只要求出底角 $\\angle ABC$ 即可；观察图形，点 $B$ 绕点 $A$ 旋转得到点 $D$，天然满足 $AB = AD$ 且夹角为旋转角，因此我们聚焦于等腰 $\\triangle ABD$！\n因为 $\\triangle ABC$ 绕点 $A$ 逆时针旋转得到 $\\triangle ADE$，所以对应边相等 $AB = AD$。\n因为对应边 $AB$ 与 $AD$ 的夹角等于旋转角，所以 $\\angle BAD = 150^\\circ$。\n因为在等腰 $\\triangle ABD$ 中，$AB = AD$ 且顶角 $\\angle BAD = 150^\\circ$，所以两底角相等且 $\\angle ABD = \\frac{180^\\circ - 150^\\circ}{2} = 15^\\circ$。\n因为点 $B, C, D$ 在同一直线上，所以角 $\\angle ABC$ 与 $\\angle ABD$ 是同一个角，即 $\\angle ABC = 15^\\circ$。\n结合以上推导，==所以求得底角 $\\angle ABC = 15^\\circ$==",
           "ggbCommands": [
             "B = (-5, 0)",
             "D = (5, 0)",
