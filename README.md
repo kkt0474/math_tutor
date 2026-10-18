@@ -32,21 +32,21 @@
 
 ```mermaid
 flowchart TD
-    User([用户端: PC / iPad / 手机]) -->|1. 上传/粘贴题目图片| Server[server.py 多线程 Web 服务\nPython ThreadingHTTPServer]
+    User(["用户端: PC / iPad / 手机"]) -->|1. 上传/粘贴题目图片| Server["server.py 多线程 Web 服务<br/>Python ThreadingHTTPServer"]
     
-    subgraph Backend [后端架构与安全隔离]
-        Server -->|2. 本地探测端口与 Token| LocalRPC[Antigravity Local RPC 引擎\nLanguage Server]
-        Server -->|3. 沙箱上下文隔离| Sandbox[math-tutor-workspace\n隔离临时会话 / 自动销毁]
-        LocalRPC -->|4. 多模态视觉推理与规范约束| Model[Gemini 3.8 Flash / 4 Argon\nAGENTS.md 教学铁律注入]
-        Model -->|5. 格式化 JSON 数据| ParseDefense[单反斜杠转义防御解析\n双重正规化清洗]
-        ParseDefense -->|6. 持久化缓存| LessonStorage[(lesson.js / uploads/)]
+    subgraph Backend ["后端架构与安全隔离"]
+        Server -->|2. 本地探测端口与 Token| LocalRPC["Antigravity Local RPC 引擎<br/>Language Server"]
+        Server -->|3. 沙箱上下文隔离| Sandbox["math-tutor-workspace<br/>隔离临时会话 / 自动销毁"]
+        LocalRPC -->|4. 多模态视觉推理与规范约束| Model["Gemini 3.8 Flash / 4 Argon<br/>AGENTS.md 教学铁律注入"]
+        Model -->|5. 格式化 JSON 数据| ParseDefense["单反斜杠转义防御解析<br/>双重正规化清洗"]
+        ParseDefense -->|6. 持久化缓存| LessonStorage[("lesson.js / uploads/")]
     end
 
-    subgraph Frontend [前端交互与教学渲染 viewer.html]
-        Server -->|7. 返回微课数据流| ViewCtrl[微课交互控制器]
-        ViewCtrl -->|8. 动态代码执行| GGB[GeoGebra Web Engine\n矢量画板 / 隐藏度数文字 / 动态辅助线]
-        ViewCtrl -->|9. 交互事件监听| Annotate[几何标注工具箱\n等长双划线 || / 弧度等角标记]
-        ViewCtrl -->|10. 规范公式排版| KaTeX[KaTeX 引擎\n中考规范解答 / 💡启发式胶囊 / 🎯目标高亮]
+    subgraph Frontend ["前端交互与教学渲染 viewer.html"]
+        Server -->|7. 返回微课数据流| ViewCtrl["微课交互控制器"]
+        ViewCtrl -->|8. 动态代码执行| GGB["GeoGebra Web Engine<br/>矢量画板 / 隐藏度数文字 / 动态辅助线"]
+        ViewCtrl -->|9. 交互事件监听| Annotate["几何标注工具箱<br/>等长双划线 ‖ / 弧度等角标记"]
+        ViewCtrl -->|10. 规范公式排版| KaTeX["KaTeX 引擎<br/>中考规范解答 / 💡启发式胶囊 / 🎯目标高亮"]
     end
 ```
 
