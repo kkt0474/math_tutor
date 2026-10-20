@@ -291,8 +291,15 @@
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; transform: translate(-50%, 6px); }
-            to { opacity: 1; transform: translate(-50%, 0); }
+            from {
+                opacity: 0;
+                transform: translate(-50%, 6px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translate(-50%, 0);
+            }
         }
 
         .subtitle-card {
@@ -427,56 +434,283 @@
             cursor: not-allowed;
         }
 
-        /* 中考满分规范步骤卡片 */
-        .solution-card {
+        /* 可折叠卡片通用样式 (解题思路分析 & 中考满分规范步骤) */
+        .collapsible-card {
             background: var(--panel-bg);
             border: 1px solid var(--panel-border);
             border-radius: 8px;
-            padding: 18px 22px;
-            margin-top: 4px;
+            margin-top: 10px;
+            overflow: hidden;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
         }
 
-        .solution-header {
+        .collapsible-card:hover {
+            border-color: rgba(56, 189, 248, 0.35);
+        }
+
+        .collapsible-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding-bottom: 12px;
-            margin-bottom: 14px;
-            border-bottom: 1px solid var(--panel-border);
+            padding: 13px 18px;
+            cursor: pointer;
+            user-select: none;
+            background: rgba(30, 41, 59, 0.45);
+            transition: background 0.15s ease;
         }
 
-        .solution-title {
+        .collapsible-header:hover {
+            background: rgba(51, 65, 85, 0.55);
+        }
+
+        .collapsible-title-wrap {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .collapsible-title {
             font-size: 15px;
             font-weight: 700;
-            color: var(--gold);
             display: flex;
             align-items: center;
             gap: 8px;
         }
 
-        .solution-body {
-            font-size: 15px;
-            line-height: 1.8;
+        .thought-title {
+            color: #f1f5f9;
+            /* 典雅冷白 */
+            text-shadow: 0 0 16px rgba(56, 189, 248, 0.35);
+        }
+
+        .thought-title::before {
+            content: "";
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #38bdf8;
+            box-shadow: 0 0 8px #38bdf8;
+            margin-right: 2px;
+        }
+
+        .solution-title {
+            color: #f8fafc;
+            /* 典雅冷白 */
+            text-shadow: 0 0 16px rgba(251, 191, 36, 0.3);
+        }
+
+        .solution-title::before {
+            content: "";
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #f59e0b;
+            box-shadow: 0 0 8px #f59e0b;
+            margin-right: 2px;
+        }
+
+        .collapsible-indicator {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: #94a3b8;
+            font-weight: 500;
+        }
+
+        .collapsible-arrow {
+            display: inline-block;
+            transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+            font-size: 11px;
+        }
+
+        .collapsible-card.is-collapsed .collapsible-arrow {
+            transform: rotate(-90deg);
+        }
+
+        .collapsible-card.is-collapsed .collapsible-body {
+            display: none;
+        }
+
+        .collapsible-body {
+            padding: 18px 22px 22px 22px;
+            border-top: 1px solid var(--panel-border);
+            font-size: 14.5px;
+            line-height: 1.85;
             color: #e2e8f0;
         }
 
-        .solution-body h3,
-        .solution-body h4 {
+        .collapsible-body h3,
+        .collapsible-body h4 {
             color: var(--accent-light);
-            margin: 12px 0 6px 0;
+            margin: 14px 0 6px 0;
+            font-size: 15px;
         }
 
-        .solution-body ul,
-        .solution-body ol {
+        .collapsible-body ul,
+        .collapsible-body ol {
             padding-left: 22px;
-            margin: 6px 0;
+            margin: 8px 0;
         }
 
-        .solution-body li {
+        .collapsible-body li {
+            margin-bottom: 5px;
+        }
+
+        /* 解题思路分析专属四级色彩层级排版体系 */
+        .thought-section {
+            margin-bottom: 22px;
+        }
+
+        .thought-section:last-child {
             margin-bottom: 4px;
         }
 
-        /* 右侧上传与控制侧边栏 */
+        /* Level 1: 章节分流大标题 (翡翠薄荷绿 vs 极光紫蓝) */
+        .thought-sec-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            font-weight: 700;
+            padding: 9px 14px;
+            border-radius: 6px;
+            margin-bottom: 12px;
+            letter-spacing: 0.3px;
+        }
+
+        .thought-sec-header.signal-sec {
+            background: linear-gradient(90deg, rgba(16, 185, 129, 0.18) 0%, rgba(16, 185, 129, 0.02) 100%);
+            border-left: 4px solid #10b981;
+            color: #34d399;
+            /* 灵动薄荷绿 */
+            text-shadow: 0 0 10px rgba(16, 185, 129, 0.25);
+        }
+
+        .thought-sec-header.route-sec {
+            background: linear-gradient(90deg, rgba(99, 102, 241, 0.2) 0%, rgba(99, 102, 241, 0.02) 100%);
+            border-left: 4px solid #6366f1;
+            color: #a5b4fc;
+            /* 科技极光紫 */
+            text-shadow: 0 0 10px rgba(99, 102, 241, 0.25);
+        }
+
+        /* Level 2: 独立条目卡片 (分舱设计) */
+        .thought-card-item {
+            background: rgba(15, 23, 42, 0.7);
+            border: 1px solid rgba(148, 163, 184, 0.14);
+            border-radius: 8px;
+            padding: 14px 18px;
+            margin-bottom: 14px;
+            line-height: 1.85;
+            color: #e2e8f0;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .thought-card-item.signal-card {
+            border-left: 3px solid rgba(16, 185, 129, 0.5);
+        }
+
+        .thought-card-item.step-1-card {
+            border-left: 3px solid rgba(244, 63, 94, 0.6);
+            /* 逆向探路：珊瑚红微边 */
+        }
+
+        .thought-card-item.step-2-card {
+            border-left: 3px solid rgba(245, 158, 11, 0.6);
+            /* 顺向搭桥：琥珀金微边 */
+        }
+
+        .thought-card-item.step-3-card {
+            border-left: 3px solid rgba(16, 185, 129, 0.6);
+            /* 逻辑闭环：翡翠绿微边 */
+        }
+
+        .thought-card-item:hover {
+            border-color: rgba(99, 102, 241, 0.4);
+            background: rgba(15, 23, 42, 0.9);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+            transform: translateY(-1px);
+        }
+
+        .thought-card-item:last-child {
+            margin-bottom: 0;
+        }
+
+        /* Level 3: 心理动线子标题徽章 (各具专属色彩) */
+        .thought-item-badge {
+            display: inline-block;
+            font-weight: 700;
+            margin-right: 6px;
+        }
+
+        .thought-item-badge.badge-signal {
+            color: #38bdf8;
+            /* 原话信号：天蓝 */
+        }
+
+        .thought-item-badge.badge-step-1 {
+            color: #fb7185;
+            /* 逆向探路：珊瑚玫红 (突出目标探索) */
+        }
+
+        .thought-item-badge.badge-step-2 {
+            color: #fbbf24;
+            /* 顺向搭桥：晨曦琥珀金 (突出条件桥接) */
+        }
+
+        .thought-item-badge.badge-step-3 {
+            color: #34d399;
+            /* 逻辑闭环：成功翡翠绿 (突出结论闭环) */
+        }
+
+        /* 破局开关与关键桥梁发光胶囊 */
+        .thought-switch-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: rgba(245, 158, 11, 0.25);
+            border: 1px solid rgba(245, 158, 11, 0.65);
+            color: #fef08a;
+            font-size: 12px;
+            font-weight: 700;
+            padding: 2px 9px;
+            border-radius: 12px;
+            margin: 0 5px;
+            vertical-align: middle;
+            box-shadow: 0 0 10px rgba(245, 158, 11, 0.2);
+        }
+
+        .thought-switch-badge.bridge {
+            background: rgba(6, 182, 212, 0.22);
+            border-color: rgba(6, 182, 212, 0.6);
+            color: #a5f3fc;
+            box-shadow: 0 0 10px rgba(6, 182, 212, 0.2);
+        }
+
+        /* 原题原话引用高亮卡片 */
+        .thought-quote-text {
+            color: #e0f2fe;
+            background: rgba(14, 116, 144, 0.22);
+            padding: 2px 7px;
+            border-radius: 4px;
+            font-weight: 500;
+            border: 1px dashed rgba(56, 189, 248, 0.45);
+            display: inline;
+        }
+
+        /* 动感推导箭头 */
+        .thought-arrow {
+            color: #818cf8;
+            /* 极光紫蓝箭头 */
+            font-weight: 900;
+            margin: 0 6px;
+            display: inline-block;
+        }
+
         .side-panel {
             display: flex;
             flex-direction: column;
@@ -631,13 +865,16 @@
                 <!-- 交互式几何标注工具栏 -->
                 <div class="annot-bar" id="annotBar">
                     <span class="annot-label">✏️ 标记工具:</span>
-                    <button class="annot-btn" id="btnEqualSeg" onclick="toggleAnnotTool('segEqual')" title="点击两条线段，为它们打上相同的几何双划线等长标记(||)">
+                    <button class="annot-btn" id="btnEqualSeg" onclick="toggleAnnotTool('segEqual')"
+                        title="点击两条线段，为它们打上相同的几何双划线等长标记(||)">
                         <span class="annot-icon">|=|</span> 标记等长边
                     </button>
-                    <button class="annot-btn" id="btnEqualAng" onclick="toggleAnnotTool('angEqual')" title="点击角或相交边，打上等角圆弧标记(⌒)">
+                    <button class="annot-btn" id="btnEqualAng" onclick="toggleAnnotTool('angEqual')"
+                        title="点击角或相交边，打上等角圆弧标记(⌒)">
                         <span class="annot-icon">⌒</span> 标记等角
                     </button>
-                    <button class="annot-btn annot-clear" id="btnClearAnnot" onclick="clearUserAnnotations()" title="清空当前画板上的所有手动标注">
+                    <button class="annot-btn annot-clear" id="btnClearAnnot" onclick="clearUserAnnotations()"
+                        title="清空当前画板上的所有手动标注">
                         <span class="annot-icon">🧹</span> 清空标记
                     </button>
                 </div>
@@ -664,13 +901,35 @@
                 <button class="ctrl-btn" id="nextBtn" onclick="moveStep(1)">下一步板书 ▶</button>
             </div>
 
-            <!-- 中考满分规范证明全文 -->
-            <div class="solution-card">
-                <div class="solution-header">
-                    <div class="solution-title">📝 中考满分规范解答（含几何模型化归）</div>
-                    <span style="font-size:12px; color:#94a3b8;" id="curQuestionLabel"></span>
+            <!-- 模块 1：解题思路分析（默认折叠） -->
+            <div class="collapsible-card is-collapsed" id="thoughtCard">
+                <div class="collapsible-header" onclick="toggleCardCollapse('thoughtCard')">
+                    <div class="collapsible-title-wrap">
+                        <div class="collapsible-title thought-title">🧭 解题思路分析（题眼破局与数学思维）</div>
+                    </div>
+                    <div class="collapsible-indicator">
+                        <span id="thoughtToggleText">点击展开</span>
+                        <span class="collapsible-arrow">▼</span>
+                    </div>
                 </div>
-                <div class="solution-body" id="solutionBody">
+                <div class="collapsible-body" id="thoughtBody">
+                    加载中...
+                </div>
+            </div>
+
+            <!-- 模块 2：中考满分规范解答（默认折叠） -->
+            <div class="collapsible-card is-collapsed" id="solutionCard">
+                <div class="collapsible-header" onclick="toggleCardCollapse('solutionCard')">
+                    <div class="collapsible-title-wrap">
+                        <div class="collapsible-title solution-title">📝 中考满分规范解答（含几何模型化归）</div>
+                        <span style="font-size:12px; color:#94a3b8;" id="curQuestionLabel"></span>
+                    </div>
+                    <div class="collapsible-indicator">
+                        <span id="solutionToggleText">点击展开</span>
+                        <span class="collapsible-arrow">▼</span>
+                    </div>
+                </div>
+                <div class="collapsible-body" id="solutionBody">
                     加载中...
                 </div>
             </div>
@@ -696,10 +955,10 @@
                 <div>
                     <label class="field-label">选择 Antigravity 模型</label>
                     <select id="modelSelect" style="margin-top:4px;">
-                        <option value="gemini-3.8-flash-medium">Gemini 3.8 Flash (Medium) - 极速推荐</option>
-                        <option value="gemini-3.8-flash-high" selected>Gemini 3.8 Flash (High) - 高精度</option>
-                        <option value="gemini-4-argon-medium">Gemini 4 Argon (Medium) - 深度压轴推理</option>
-                        <option value="claude-sonnet-5-5-medium">Claude Sonnet 5.5 (Medium)</option>
+                        <option value="gemini-3.8-flash-high" selected>Gemini 3.8 Flash (High) - 高精度深度推演 (默认推荐)</option>
+                        <option value="gemini-3.8-flash-medium">Gemini 3.8 Flash (Medium) - 极速模式 (约 30~60 秒)</option>
+                        <option value="claude-sonnet-5-5-medium">Claude Sonnet 5.5 - 强逻辑推演 (约 1~2 分钟)</option>
+                        <option value="gemini-4-argon-medium">Gemini 4 Argon (Medium) - 压轴多步推理 (约 1~3 分钟)</option>
                     </select>
                 </div>
 
@@ -753,7 +1012,7 @@
             } catch (e) {
                 try {
                     ggbApp.registerClickListener(handleGgbObjectClick);
-                } catch (err) {}
+                } catch (err) { }
             }
         }
 
@@ -970,7 +1229,7 @@
             lesson.questions.forEach((q, idx) => {
                 const btn = document.createElement('button');
                 btn.className = 'q-btn' + (idx === 0 ? ' active' : '');
-                btn.innerText = q.title;
+                btn.innerHTML = formatMathAndMarkdown(q.title);
                 btn.onclick = () => loadQuestion(idx);
                 tabs.appendChild(btn);
             });
@@ -1002,29 +1261,159 @@
                 ggbApp.setAxesVisible(cfg.hasAxes ?? true, cfg.hasAxes ?? true);
             }
 
+            // 记录所有命令中定义的 Angle(P1, V, P2)，规避不同语言环境下 getCommandString 的差异
+            const angleDefs = {};
             for (let i = 0; i <= curStepIdx; i++) {
                 const cmds = q.steps[i].ggbCommands || [];
                 cmds.forEach(cmd => {
+                    const m = cmd.match(/^([A-Za-z0-9_]+)\s*=\s*Angle\s*\(\s*([A-Za-z0-9_']+)\s*,\s*([A-Za-z0-9_']+)\s*,\s*([A-Za-z0-9_']+)\s*\)/i);
+                    if (m) {
+                        angleDefs[m[1].trim()] = { p1: m[2].trim(), v: m[3].trim(), p2: m[4].trim() };
+                    }
                     ggbApp.evalCommand(cmd);
                 });
             }
 
-            // 技术兜底：自动隐藏所有角度(angle)、线段(segment)、多边形(polygon)的冗余文字标签，仅保留顶点的字母标签，彻底防止角度度数重叠
+            // 几何后处理引擎 1：基于平面向量叉乘与正交投影的【90°直角方框精确吸附】与【反角(>180°)自动翻转】
             try {
+                // 第一步：对所有接近 90° (88°~92°) 的近似直角顶点做双精度正交投影微调，消除大模型手算小数截断误差，使 GeoGebra 100% 渲染出直角方框 ∟
+                Object.keys(angleDefs).forEach(angName => {
+                    const { p1, v, p2 } = angleDefs[angName];
+                    const x1 = ggbApp.getXcoord(p1), y1 = ggbApp.getYcoord(p1);
+                    const xv = ggbApp.getXcoord(v),  yv = ggbApp.getYcoord(v);
+                    const x2 = ggbApp.getXcoord(p2), y2 = ggbApp.getYcoord(p2);
+                    if ([x1, y1, xv, yv, x2, y2].some(n => typeof n !== 'number' || isNaN(n))) return;
+
+                    const v1x = x1 - xv, v1y = y1 - yv;
+                    const v2x = x2 - xv, v2y = y2 - yv;
+                    const len1 = Math.hypot(v1x, v1y), len2 = Math.hypot(v2x, v2y);
+                    if (len1 < 1e-6 || len2 < 1e-6) return;
+
+                    const cosTheta = (v1x * v2x + v1y * v2y) / (len1 * len2);
+                    const deg = Math.acos(Math.max(-1, Math.min(1, cosTheta))) * 180 / Math.PI;
+
+                    if (deg >= 88.0 && deg <= 92.0 && Math.abs(deg - 90.0) > 1e-13) {
+                        // 将垂足 v 严格正交投影到直线 p1-v 上，使向量点积严格为 0
+                        const ux = xv - x1, uy = yv - y1;
+                        const uLen2 = ux * ux + uy * uy;
+                        if (uLen2 > 1e-6) {
+                            const t = ((x2 - x1) * ux + (y2 - y1) * uy) / uLen2;
+                            ggbApp.setCoords(v, x1 + t * ux, y1 + t * uy);
+                        }
+                    }
+                });
+
+                // 第二步：用二维向量叉乘 (Cross Product) 检查所有角的逆时针方向，若 cross < 0 (即 >180° 吃豆人反角) 立即翻转两端点
+                Object.keys(angleDefs).forEach(angName => {
+                    const { p1, v, p2 } = angleDefs[angName];
+                    const x1 = ggbApp.getXcoord(p1), y1 = ggbApp.getYcoord(p1);
+                    const xv = ggbApp.getXcoord(v),  yv = ggbApp.getYcoord(v);
+                    const x2 = ggbApp.getXcoord(p2), y2 = ggbApp.getYcoord(p2);
+                    if ([x1, y1, xv, yv, x2, y2].some(n => typeof n !== 'number' || isNaN(n))) return;
+
+                    const v1x = x1 - xv, v1y = y1 - yv;
+                    const v2x = x2 - xv, v2y = y2 - yv;
+                    const cross = v1x * v2y - v1y * v2x;
+                    if (cross < -1e-5) {
+                        const color = ggbApp.getColor(angName);
+                        ggbApp.evalCommand(`${angName} = Angle(${p2}, ${v}, ${p1})`);
+                        if (color) ggbApp.evalCommand(`SetColor(${angName}, "${color}")`);
+                        angleDefs[angName] = { p1: p2, v: v, p2: p1 };
+                    }
+                });
+
+                // 第三步：注入 XML 强制禁止反角、开启直角方框强调，并隐藏非顶点文字标签
                 const allNames = ggbApp.getAllObjectNames() || [];
                 allNames.forEach(objName => {
                     const objType = ggbApp.getObjectType(objName);
-                    if (objType === 'angle' || objType === 'segment' || objType === 'polygon' || objType === 'conic' || objType === 'ray' || objType === 'line') {
+                    if (objType === 'angle') {
+                        try {
+                            // 仅对数值确为 90° 的角启用直角方框；其余角（如 120°）显式关闭，避免错误显示直角标记
+                            const angDeg = ggbApp.getValue(objName) * 180 / Math.PI;
+                            const isRight = Math.abs(angDeg - 90) < 1e-3;
+                            ggbApp.evalXML(`<element type="angle" label="${objName}"><allowReflexAngle val="false"/><emphasizeRightAngle val="${isRight}"/></element>`);
+                        } catch (err) { }
+                        ggbApp.setLabelVisible(objName, false);
+                    } else if (objType === 'segment' || objType === 'polygon' || objType === 'conic' || objType === 'ray' || objType === 'line') {
                         ggbApp.setLabelVisible(objName, false);
                     }
                 });
+
+                // 等角分组着色：按数值把大小相等的角归为一组，同组同色同弧半径，不同组颜色与弧半径明显不同
+                const ANGLE_GROUP_STYLES = [
+                    { color: '#10B981', size: 30 },  // 翠绿
+                    { color: '#F59E0B', size: 42 },  // 琥珀
+                    { color: '#EC4899', size: 54 },  // 粉红
+                    { color: '#8B5CF6', size: 66 },  // 紫
+                    { color: '#06B6D4', size: 36 },  // 青
+                    { color: '#EF4444', size: 48 }   // 红
+                ];
+                const angleGroups = [];
+                allNames.forEach(objName => {
+                    if (ggbApp.getObjectType(objName) !== 'angle') return;
+                    const deg = ggbApp.getValue(objName) * 180 / Math.PI;
+                    if (isNaN(deg)) return;
+                    let g = angleGroups.find(gr => Math.abs(gr.deg - deg) < 0.05);
+                    if (!g) { g = { deg, names: [] }; angleGroups.push(g); }
+                    g.names.push(objName);
+                });
+                angleGroups.forEach((g, gi) => {
+                    const st = ANGLE_GROUP_STYLES[gi % ANGLE_GROUP_STYLES.length];
+                    g.names.forEach(n => {
+                        try { ggbApp.evalXML(`<element type="angle" label="${n}"><arcSize val="${st.size}"/></element>`); } catch (err) { }
+                        ggbApp.evalCommand(`SetColor(${n}, "${st.color}")`);
+                        ggbApp.evalCommand(`ShowLabel(${n}, false)`);
+                        ggbApp.setLabelVisible(n, false);
+                    });
+                });
+
+                // 几何后处理引擎 2：自动扫描题干与第 1 步已知条件中的相等线段（如 DE=EF, BC=CD），在图形上自动标出等长刻度线
+                const step0Text = (q.title || '') + '\n' + ((q.steps[0] && q.steps[0].explanation) || '');
+                const eqRegex = /(?<![0-9\\A-Za-z])([A-Z]{2})\s*=\s*([A-Z]{2})(?:\s*=\s*([A-Z]{2}))?(?![0-9A-Za-z])/g;
+                let eqMatch;
+                let groupIdx = 0;
+                const decoratedGroups = [];
+                while ((eqMatch = eqRegex.exec(step0Text)) !== null) {
+                    const prefix = step0Text.slice(Math.max(0, eqMatch.index - 12), eqMatch.index);
+                    if (/求证[：:\s]*$|求[：:\s]*$|证得|求得|所以/.test(prefix)) continue;
+
+                    const segs = [eqMatch[1], eqMatch[2], eqMatch[3]].filter(Boolean);
+                    const allPtsExist = segs.every(s => ggbApp.exists(s[0]) && ggbApp.exists(s[1]));
+                    if (!allPtsExist) continue;
+
+                    const key = segs.slice().sort().join('=');
+                    if (decoratedGroups.includes(key)) continue;
+                    decoratedGroups.push(key);
+
+                    // 对成对相等的已知线段（如 DE=EF, BC=CD）自动打上数学等长刻度线（| 或 ||）
+                    if (segs.length === 2) {
+                        const decorType = (groupIdx % 2) + 1;
+                        segs.forEach(s => {
+                            const pA = s[0], pB = s[1];
+                            let targetSeg = `seg${pA}${pB}`;
+                            const revSeg = `seg${pB}${pA}`;
+                            if (ggbApp.exists(targetSeg)) {
+                                // 使用已有线段
+                            } else if (ggbApp.exists(revSeg)) {
+                                targetSeg = revSeg;
+                            } else {
+                                ggbApp.evalCommand(`${targetSeg} = Segment(${pA}, ${pB})`);
+                                ggbApp.setLabelVisible(targetSeg, false);
+                                ggbApp.evalCommand(`SetColor(${targetSeg}, "#38BDF8")`);
+                                ggbApp.evalCommand(`SetLineThickness(${targetSeg}, 3)`);
+                            }
+                            ggbApp.evalCommand(`SetDecoration(${targetSeg}, ${decorType})`);
+                        });
+                        groupIdx++;
+                    }
+                }
             } catch (e) { }
 
-            document.getElementById('subStep').innerText = `${q.title} · 步骤 ${curStepIdx + 1}/${q.steps.length}：${step.name}`;
+            document.getElementById('subStep').innerHTML = formatMathAndMarkdown(`${q.title} · 步骤 ${curStepIdx + 1}/${q.steps.length}：${step.name}`);
             const modelEl = document.getElementById('subModel');
             if (step.modelName && step.modelName.trim()) {
                 modelEl.style.display = 'inline-block';
-                modelEl.innerText = `💡 思路：${step.modelName}`;
+                modelEl.innerHTML = formatMathAndMarkdown(`💡 思路：${step.modelName}`);
             } else {
                 modelEl.style.display = 'none';
             }
@@ -1050,6 +1439,19 @@
                 .replace(/\x08(ecause|egin|eta|ar)/g, '\\b$1')
                 .replace(/\f(rac|orall)/g, '\\f$1')
                 .replace(/\r(ight|ho)/g, '\\r$1');
+            // 兜底：模型有时在 ==...== 高亮结论中漏写 $...$，导致 \angle、^\circ 等以源码裸露。
+            // 对不含 $ 且含 LaTeX 命令的 ==...== 块，按“非 ASCII 字符（中文/标点）”切段，把含反斜杠命令的 ASCII 片段自动包上 $...$
+            md = md.replace(/==([\s\S]+?)==/g, (full, inner) => {
+                if (inner.includes('$') || !/\\[a-zA-Z]+/.test(inner)) return full;
+                const wrapped = inner.split(/([^\x00-\x7F]+)/).map(seg => {
+                    if (!/\\[a-zA-Z]+/.test(seg)) return seg;
+                    const lead = seg.match(/^\s*/)[0];
+                    const tail = seg.match(/\s*$/)[0];
+                    const core = seg.trim();
+                    return core ? `${lead}$${core}$${tail}` : seg;
+                }).join('');
+                return `==${wrapped}==`;
+            });
             const mathBlocks = [];
             md = md.replace(/\$\$([\s\S]*?)\$\$/g, (_, m) => {
                 mathBlocks.push({ display: true, tex: m });
@@ -1136,11 +1538,169 @@
             return html;
         }
 
+        function toggleCardCollapse(cardId) {
+            const card = document.getElementById(cardId);
+            if (!card) return;
+            const isCollapsed = card.classList.toggle('is-collapsed');
+            const textId = cardId === 'thoughtCard' ? 'thoughtToggleText' : 'solutionToggleText';
+            const textEl = document.getElementById(textId);
+            if (textEl) {
+                textEl.innerText = isCollapsed ? '点击展开' : '点击收起';
+            }
+        }
+
+        function formatThoughtAnalysis(md) {
+            if (!md) return "暂无该题解题思路分析记录。";
+
+            // 1. 修复因单反斜杠转义导致的控制字符破坏
+            md = md
+                .replace(/\t(riangle|ext|imes|heta|herefore|au)/g, '\\t$1')
+                .replace(/\x08(ecause|egin|eta|ar)/g, '\\b$1')
+                .replace(/\f(rac|orall)/g, '\\f$1')
+                .replace(/\r(ight|ho)/g, '\\r$1');
+
+            // 2. 保护数学公式块
+            const mathBlocks = [];
+            md = md.replace(/\$\$([\s\S]*?)\$\$/g, (_, m) => {
+                mathBlocks.push({ display: true, tex: m });
+                return `@@MATH_BLOCK_${mathBlocks.length - 1}@@`;
+            });
+            md = md.replace(/\$([^\$\n]+?)\$/g, (_, m) => {
+                mathBlocks.push({ display: false, tex: m });
+                return `@@MATH_INLINE_${mathBlocks.length - 1}@@`;
+            });
+
+            // 3. 按主要章节拆分：题眼信号 vs 思维路线
+            const lines = md.split(/\r?\n/);
+            let html = "";
+            let inSection = false;
+            let currentItemLines = [];
+
+            // 预处理：统一箭头符号，避免被公式或标签吞噬
+            md = md.replace(/\$(?:\\rightarrow|\\to)\$/g, '➔').replace(/\\rightarrow/g, '➔');
+
+            function flushItem() {
+                if (currentItemLines.length === 0) return;
+                let itemText = currentItemLines.join('\n').trim();
+                currentItemLines = [];
+                if (!itemText) return;
+
+                let cardClass = "thought-card-item";
+                if (/原话信号/.test(itemText)) {
+                    cardClass += " signal-card";
+                } else if (/逆向探路/.test(itemText)) {
+                    cardClass += " step-1-card";
+                } else if (/顺向搭桥/.test(itemText)) {
+                    cardClass += " step-2-card";
+                } else if (/逻辑闭环/.test(itemText)) {
+                    cardClass += " step-3-card";
+                }
+
+                // 替换条目标题高亮 (完整保留小括号与原标题内容，防止出现空括号)
+                itemText = itemText
+                    .replace(/^[*•\-\s]*\d*[\.、]?\s*\**原话信号([一二三四五\d]+)\**[：:]?/g, '<span class="thought-item-badge badge-signal">🏷️ 原话信号$1：</span>')
+                    .replace(/^[*•\-\s]*(1[\.、]\s*逆向探路[^\n：:]*)[：:]?/g, '<span class="thought-item-badge badge-step-1">🎯 $1：</span>')
+                    .replace(/^[*•\-\s]*(2[\.、]\s*顺向搭桥[^\n：:]*)[：:]?/g, '<span class="thought-item-badge badge-step-2">🌉 $1：</span>')
+                    .replace(/^[*•\-\s]*(3[\.、]\s*逻辑闭环[^\n：:]*)[：:]?/g, '<span class="thought-item-badge badge-step-3">🔄 $1：</span>')
+                    .replace(/^[*•\-\s]*(\d+)[\.、]\s+/g, '<span class="thought-item-badge badge-step-2">($1) </span>');
+
+                // 替换原话中文引号卡片
+                itemText = itemText.replace(/“([^”]+)”/g, '<span class="thought-quote-text">“$1”</span>');
+                // 替换破局开关与关键桥梁胶囊
+                itemText = itemText.replace(/【(?:💡\s*)?(?:破局开关|关键开关|解题开关)】[：:]?/g, '<span class="thought-switch-badge">⚡ 破局开关</span>');
+                itemText = itemText.replace(/【(?:关键桥梁|思维桥梁)】[：:]?/g, '<span class="thought-switch-badge bridge">🌉 关键桥梁</span>');
+                // 替换箭头
+                itemText = itemText.replace(/(?:→|➔)/g, '<span class="thought-arrow">➔</span>');
+                // 替换加粗
+                itemText = itemText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                // 换行
+                itemText = itemText.replace(/\n/g, '<br>');
+
+                html += `<div class="${cardClass}">${itemText}</div>`;
+            }
+
+            for (let rawLine of lines) {
+                let line = rawLine.trim();
+                if (!line) {
+                    flushItem();
+                    continue;
+                }
+
+                // 精准匹配章节大标题（严禁仅凭“破局开关”匹配，因为条目内容里也有破局开关标签）
+                if (/^[#*•\-\s]*【?[💡\s]*题眼信号/.test(line)) {
+                    flushItem();
+                    if (inSection) html += `</div>`;
+                    inSection = true;
+                    html += `<div class="thought-section"><div class="thought-sec-header signal-sec">💡 题眼信号识别（原题破局开关）</div>`;
+                    continue;
+                } else if (/^[#*•\-\s]*【?[🧭\s]*(?:人类)?(?:破题|解题)?思维路线/.test(line)) {
+                    flushItem();
+                    if (inSection) html += `</div>`;
+                    inSection = true;
+                    html += `<div class="thought-section"><div class="thought-sec-header signal-sec">🧭 破题思维路线（步步推演）</div>`;
+                    continue;
+                }
+
+                // 检测是否是新条目的开头（如数字序号开头，或“原话信号”开头）
+                const isNewItem = /^[*•\-\s]*\d+[\.、]/.test(line) || /^[*•\-\s]*原话信号/.test(line);
+                if (isNewItem) {
+                    flushItem();
+                }
+                currentItemLines.push(line);
+            }
+            flushItem();
+            if (inSection) {
+                html += `</div>`;
+            }
+
+            // 兜底：若未能匹配到章节模板，退回常规 markdown
+            if (!html.trim()) {
+                html = formatMathAndMarkdown(md);
+                return html;
+            }
+
+            // 4. 还原并渲染数学公式
+            html = html.replace(/@@MATH_(BLOCK|INLINE)_(\d+)@@/g, (_, type, idx) => {
+                const item = mathBlocks[Number(idx)];
+                if (window.katex) {
+                    try {
+                        return katex.renderToString(item.tex, {
+                            displayMode: item.display,
+                            throwOnError: false
+                        });
+                    } catch (e) {
+                        return item.tex;
+                    }
+                }
+                return item.tex;
+            });
+
+            return html;
+        }
+
         function renderSolutionMarkdown() {
             const q = lesson.questions[curQIdx];
-            const container = document.getElementById('solutionBody');
-            document.getElementById('curQuestionLabel').innerText = q.title;
-            container.innerHTML = formatMathAndMarkdown(q.solutionMarkdown || "暂无该问详细步骤记录。");
+            document.getElementById('curQuestionLabel').innerHTML = formatMathAndMarkdown(q.title);
+
+            // 1. 渲染解题思路分析 (采用专属的结构化卡片排版)
+            const thoughtContainer = document.getElementById('thoughtBody');
+            let thoughtText = q.thoughtAnalysis;
+            if (!thoughtText && q.solutionMarkdown) {
+                const markerMatch = q.solutionMarkdown.match(/([\s\S]*?)(?:####\s*【中考规范书写过程】|解[：:])/);
+                if (markerMatch && markerMatch[1].trim()) {
+                    thoughtText = markerMatch[1].trim();
+                }
+            }
+            thoughtContainer.innerHTML = formatThoughtAnalysis(thoughtText || "暂无该题解题思路分析记录。");
+
+            // 2. 渲染中考规范解答全文 (若已有独立的 thoughtAnalysis，避免在规范解答中重复显示思路部分)
+            const solContainer = document.getElementById('solutionBody');
+            let solText = q.solutionMarkdown || "暂无该问详细步骤记录。";
+            if (q.thoughtAnalysis && solText.includes('#### 【中考规范书写过程】')) {
+                const parts = solText.split('#### 【中考规范书写过程】');
+                solText = '#### 【中考规范书写过程】' + parts[1];
+            }
+            solContainer.innerHTML = formatMathAndMarkdown(solText);
         }
 
         function setupUploadHandlers() {
@@ -1212,7 +1772,12 @@
             btn.innerText = "⏳ AI 正在全力推演中...";
             document.getElementById('loadingTitle').innerText = `正在调用 ${modelName.split(' - ')[0]} 推演几何模型...`;
             overlay.classList.add('active');
-            showStatus("🔄 后台正在自动调用 Antigravity 模型识别题目并生成微课数据，预计耗时 15~30 秒...", "#38bdf8");
+            const startTime = Date.now();
+            const timerId = setInterval(() => {
+                const elapsedSec = Math.floor((Date.now() - startTime) / 1000);
+                btn.innerText = `⏳ AI 深度推演中... (${elapsedSec}s)`;
+                showStatus(`🔄 后台正在调用 Antigravity 模型深度推演几何模型与 GeoGebra 板书，已耗时 ${elapsedSec} 秒...`, "#38bdf8");
+            }, 1000);
 
             try {
                 const res = await fetch(`${API_BASE}/api/solve`, {
@@ -1227,16 +1792,22 @@
                 const data = await res.json();
 
                 if (data.ok && data.lessonData) {
+                    const totalSec = data.elapsed || Math.round((Date.now() - startTime) / 1000);
+                    const mins = Math.floor(totalSec / 60);
+                    const secs = Math.round(totalSec % 60);
+                    const timeText = mins > 0 ? `${mins} 分 ${secs} 秒` : `${secs} 秒`;
                     // 2. 生成结束，前台自动渲染微课程内容！
                     window.LESSON_DATA = data.lessonData;
                     loadLessonData(data.lessonData);
-                    showStatus(`🎉 微课生成成功！已为您自动加载全部 ${data.lessonData.questions.length} 个小问的动态板书与规范解析。`, "#10b981");
+                    showStatus(`🎉 微课生成成功！⏱️ <b>本次推演计算耗时：${timeText}</b>，已自动加载全部 ${data.lessonData.questions.length} 个小问的动态板书与规范解析。`, "#10b981");
                 } else {
-                    showStatus(`❌ 生成失败：${data.error || '未知错误'}`, "#f43f5e");
+                    const failSec = Math.round((Date.now() - startTime) / 1000);
+                    showStatus(`❌ 生成失败 (耗时 ${failSec} 秒)：${data.error || '未知错误'}`, "#f43f5e");
                 }
             } catch (err) {
                 showStatus(`❌ 无法连接后台服务 (${API_BASE})，请确认主机已在终端运行 <code>python3 server.py</code>`, "#f43f5e");
             } finally {
+                clearInterval(timerId);
                 overlay.classList.remove('active');
                 btn.disabled = false;
                 btn.innerText = "✨ 提交并自动生成微课";

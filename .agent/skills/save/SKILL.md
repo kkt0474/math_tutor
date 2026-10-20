@@ -1,6 +1,9 @@
 ---
-description: description: 归档当前会话上下文并写入 docs/HANDOFF.md
+name: save
+description: 归档当前会话上下文并写入 docs/HANDOFF.md。Use when ending a session to archive context for handoff.
 ---
+
+# Save
 
 请执行会话归档工作流：
 1. 检查本次会话中的代码修改与业务讨论。

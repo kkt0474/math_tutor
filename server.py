@@ -116,7 +116,7 @@ def discover_local_antigravity_server() -> dict | None:
     return None
 
 
-def agy_rpc(server_info: dict, method: str, payload: dict, timeout: int = 180) -> dict:
+def agy_rpc(server_info: dict, method: str, payload: dict, timeout: int = 600) -> dict:
     """调用本地 Antigravity LanguageServerService RPC 接口"""
     url = f"http://127.0.0.1:{server_info['port']}/exa.language_server_pb.LanguageServerService/{method}"
     req = urllib.request.Request(
@@ -142,6 +142,9 @@ def build_strict_json_prompt(extra_note: str) -> str:
 
 【重要指令：请勿调用任何工具（Do NOT call any tools）！直接输出纯 JSON 对象！】
 
+【用户最高优先级补充要求（与下文规范冲突时以此为准，全篇所有字段——含 thoughtAnalysis、explanation、solutionMarkdown——都必须遵守）】：
+{extra_note or "无"}
+
 {agents_spec}
 
 【输出 JSON 结构强制要求】：
@@ -154,6 +157,7 @@ def build_strict_json_prompt(extra_note: str) -> str:
   "questions": [
     {{
       "title": "第(1)问：...",
+      "thoughtAnalysis": "* **【💡 题眼信号识别（破题开关）】**：明确指出题干哪句原话是关键开关，看到该条件第一反应联想到什么几何定理/模型；\\n* **【🧭 人类解题思维路线】**：按照人类探索思维（要求什么 -> 缺什么 -> 由题眼搭桥连通已知 -> 逻辑闭环）引导用户一步步破局，转化为人类可复用的思维方式，不罗列机械算数细节。",
       "steps": [
         {{
           "name": "步骤短标题（如：构造一线三垂直全等 △BCD ≌ △EMB）",
@@ -167,7 +171,7 @@ def build_strict_json_prompt(extra_note: str) -> str:
           ]
         }}
       ],
-      "solutionMarkdown": "### 第 (1) 问：...\\n\\n* **【解题思路】**：...\\n\\n#### 【中考规范书写过程】\\n1. ...（支持标准 LaTeX 公式如 $\\\\triangle AOB \\\\cong \\\\triangle CFA$）"
+      "solutionMarkdown": "#### 【中考规范书写过程】\\n解：\\n1. ...（纯粹的中考规范书写步骤，支持标准 LaTeX 公式如 $\\\\triangle AOB \\\\cong \\\\triangle CFA$）"
     }}
   ]
 }}
@@ -184,40 +188,107 @@ def build_strict_json_prompt(extra_note: str) -> str:
 4. **分步排版（一行一个“因为…所以…”子步骤） & 核心结论高亮（`==...==`） & 禁止跳步**：
    - 在每个 step 的 `explanation` 中，把有直接关联的“因为 XXXXX，所以我们得到 YYYYY。”写在一行里，下一个子步骤必须用 `\\n` 换行另起一行开始！
    - 在 `explanation` 的最后一行，**必须将该步骤最终要证明或达成的核心结论用双等号 `==...==` 包裹起来**。
+   - **`==...==` 内部出现的任何数学符号/角/度数也必须用 `$...$` 包裹**（如 `==所以求得 $\\\\angle ABC + \\\\angle ADC = 240^\\\\circ$==`），严禁在高亮结论中裸写 LaTeX 源码！
    - 严禁使用“极易证得”、“显然”、“易知”等跳步词汇！证全等或相似必须明确列出 3 个条件。
-5. **隐藏角度度数标签 & 反角防御**：
+5. **隐藏角度度数标签 & 反角防御 & 斜线垂足高精度**：
    - GeoGebra 的 `Angle(P1, Vertex, P2)` 默认按逆时针方向计算角度！画直角或内角时，务必按逆时针方向排列三个点，使角度显示在 0°~180° 之间。
    - 凡是创建 `ang = Angle(...)`，必须紧接着调用 `ShowLabel(ang, false)`，只保留直角方框或圆弧符号，严禁显示角度度数文字以免重叠！
-6. **严禁角命名同义反复与等号废话（实质性几何转化约束）**：
+   - 凡是题干或小问包含垂直条件（如 `CM ⊥ AB 于 M`），必须为每个垂足创建 `Angle` 标记直角！若垂线落在斜线上含无理数坐标，坐标必须保留至少 6 位小数（如 `4.041452`），防止因小数截断导致角度偏离 90° 而无法显示直角方框 `∟`！
+6. **已知相等线段与相等角在 Step 1 自动标出（视觉条件显性化）**：
+   - 题干或当前小问已知条件明确给出的**相等线段**（如 `DE = EF`、`BC = CD`），在 `steps[0]`（第 1 步）中必须显式创建对应的 `Segment` 并调用 `SetDecoration(seg, 1)` 或 `SetDecoration(seg, 2)` 标出等长刻度线（`|` 或 `||`）！
+   - 题干已知条件给出的**相等角或特殊角**（如 `∠BAD = ∠BCD = 60°`），在 `steps[0]` 中必须全部创建 `Angle` 并设置相同颜色（如 `#10B981`），让已知相等条件在原图中一目了然！
+7. **严禁角命名同义反复与等号废话（实质性几何转化约束）**：
    - 等式两边必须是具有几何依据的转化，**严禁将同一个角的单字母简写与其三字母全称划等号**（如严禁写 `\\angle B = \\angle ABC`、`\\angle C = \\angle ACB` 这种自我解释废话）！
    - 示范：❌ 禁止写 `==所以求得底角 \\angle B = \\angle ABC = 15^\\circ==`；✅ 必须规范写为 `==所以求得底角 \\angle ABC = 15^\\circ==` 或 `==所以求得底角 \\angle ABC = \\angle ABD = 15^\\circ==`。除题干明确要求外，统一使用三字母角记法。
-7. 用户补充要求：{extra_note or "无，请完整覆盖题目所有小问，1:1还原原图朝向，凡有辅助线必须先讲清楚是怎么想到的"}
+8. 用户补充要求：{extra_note or "无，请完整覆盖题目所有小问，1:1还原原图朝向，凡有辅助线必须先讲清楚是怎么想到的"}
 """
 
 
 def extract_json_from_text(text: str) -> dict:
-    """从模型返回的文本中提取合法的 JSON 对象"""
-    text = text.strip()
-    # 去掉 markdown 代码块包裹
-    fence_match = re.search(r"```(?:json|javascript|js)?\s*(\{[\s\S]*\})\s*```", text)
-    if fence_match:
-        text = fence_match.group(1).strip()
-    else:
-        # 寻找第一个 { 和最后一个 }
-        start = text.find("{")
-        end = text.rfind("}")
-        if start != -1 and end != -1 and end > start:
-            text = text[start : end + 1]
+    """
+    从模型返回的文本中提取合法的 JSON 对象。
+    具备多重自动容错自愈能力：
+    1. 自动备份原始文本到 uploads/last_raw_model_reply.txt 便于排查；
+    2. 允许 strict=False 容忍字符串内控制字符；
+    3. 全方位正则识别修复 LaTeX 单反斜杠公式（\\angle, \\perp, \\cong, \\sim, \\triangle 等）；
+    4. 自动移除末尾多余逗号（trailing commas）；
+    5. 自动修复 GeoGebra 嵌套引号与中文符号；
+    6. 降级使用 ast.literal_eval 救砖恢复。
+    """
+    # 0. 实时备份原始文本
+    try:
+        raw_log = UPLOADS_DIR / "last_raw_model_reply.txt"
+        raw_log.write_text(text, encoding="utf-8")
+        print(f"[{time.strftime('%H:%M:%S')}] 💾 原始模型输出已记录到: {raw_log} (长度: {len(text)} 字符)")
+    except Exception:
+        pass
 
-    # 若带有 window.LESSON_DATA = 前缀则剥离
-    text = re.sub(r"^window\.LESSON_DATA\s*=\s*", "", text).rstrip(";").strip()
-    # 防止模型在 JSON 中将 \triangle, \text, \because, \frac, \right, \neq 等写成单斜杠被 json.loads 当作控制字符
-    text = re.sub(
-        r"(?<!\\)\\(triangle|text|times|theta|therefore|tau|because|begin|beta|bar|frac|forall|right|rho|neq|nu|nabla)",
-        r"\\\\\1",
-        text,
-    )
-    return json.loads(text)
+    text_clean = text.strip()
+
+    # 1. 提取 JSON 代码块或最外层大括号
+    fence_match = re.search(r"```(?:json|javascript|js)?\s*(\{[\s\S]*\})\s*```", text_clean)
+    if fence_match:
+        text_clean = fence_match.group(1).strip()
+    else:
+        start = text_clean.find("{")
+        end = text_clean.rfind("}")
+        if start != -1 and end != -1 and end > start:
+            text_clean = text_clean[start : end + 1]
+
+    # 去掉 window.LESSON_DATA 前缀
+    text_clean = re.sub(r"^window\.LESSON_DATA\s*=\s*", "", text_clean).rstrip(";").strip()
+
+    # 阶段 1：尝试直接解析（宽松模式）
+    try:
+        return json.loads(text_clean, strict=False)
+    except Exception as e1:
+        print(f"[{time.strftime('%H:%M:%S')}] ⚠️ 基础 JSON 解析未通过 ({e1})，启动智能自愈管线...")
+
+    # 阶段 2：全方位 LaTeX 单反斜杠自愈
+    # 在标准 JSON 中，只有 \" \\ \/ \b \f \n \r \t \uXXXX 是合法的转义序列。
+    # 几何模型生成的 LaTeX 公式（如 \angle, \perp, \cong, \triangle, \because 等）如果带有单斜杠必须全部转为 \\
+    fixed = re.sub(r'\\(?![\\"/bfnrt]|u[0-9a-fA-F]{4})', r'\\\\', text_clean)
+    # 移除数组与对象末尾的非法逗号 (trailing commas)
+    fixed = re.sub(r',\s*([\]}])', r'\1', fixed)
+
+    try:
+        data = json.loads(fixed, strict=False)
+        print(f"[{time.strftime('%H:%M:%S')}] ✅ 自愈成功：阶段 2 (LaTeX 转义与尾部逗号修复) 成功解析 JSON！")
+        return data
+    except Exception as e2:
+        print(f"[{time.strftime('%H:%M:%S')}] ⚠️ 阶段 2 未通过 ({e2})，尝试阶段 3 嵌套引号与特殊符号清洗...")
+
+    # 阶段 3：修复 GeoGebra 嵌套引号与字符串内单双引号混乱
+    # 例如 SetColor(seg, "#38BDF8") 内部未转义的双引号
+    fixed2 = re.sub(r'SetColor\(([^,]+),\s*"([^"]+)"\)', r'SetColor(\1, \\"\2\\")', fixed)
+    fixed2 = re.sub(r'SetColor\(([^,]+),\s*""([^"]+)""\)', r'SetColor(\1, \\"\2\\")', fixed2)
+    # 移除对象键名缺失引号或中文全角冒号
+    fixed2 = fixed2.replace("：", ":")
+
+    try:
+        data = json.loads(fixed2, strict=False)
+        print(f"[{time.strftime('%H:%M:%S')}] ✅ 自愈成功：阶段 3 (嵌套引号修复) 成功解析 JSON！")
+        return data
+    except Exception as e3:
+        print(f"[{time.strftime('%H:%M:%S')}] ⚠️ 阶段 3 未通过 ({e3})，尝试阶段 4 Python AST 容错提取...")
+
+    # 阶段 4：Python AST 解析降级（可容忍大部分 JSON 标点微瑕疵）
+    try:
+        import ast
+        py_repr = fixed2
+        py_repr = re.sub(r'\btrue\b', 'True', py_repr)
+        py_repr = re.sub(r'\bfalse\b', 'False', py_repr)
+        py_repr = re.sub(r'\bnull\b', 'None', py_repr)
+        res = ast.literal_eval(py_repr)
+        if isinstance(res, dict) and "questions" in res:
+            print(f"[{time.strftime('%H:%M:%S')}] ✅ 自愈成功：阶段 4 (AST 结构解析) 成功拯救微课数据！")
+            return res
+    except Exception:
+        pass
+
+    # 若所有救砖机制均无法恢复，抛出详细诊断信息
+    print(f"[{time.strftime('%H:%M:%S')}] ❌ 所有自愈机制均告竭，原始报错：{e1}")
+    raise e1
 
 
 def solve_problem_automatically(image_bytes: bytes, mime_type: str, extra_note: str, model_slug: str) -> dict:
@@ -246,7 +317,7 @@ def solve_problem_automatically(image_bytes: bytes, mime_type: str, extra_note: 
         b64_img = base64.b64encode(image_bytes).decode("utf-8")
         prompt = build_strict_json_prompt(extra_note)
 
-        # 2. 发送图片 + 强约束 Prompt，阻塞等待模型推理完成
+        # 2. 发送图片 + 强约束 Prompt（非阻塞方式发送，通过轮询避免单个 HTTP 长连接触发网关 300 秒超时）
         agy_rpc(
             server_info,
             "SendUserCascadeMessage",
@@ -260,28 +331,64 @@ def solve_problem_automatically(image_bytes: bytes, mime_type: str, extra_note: 
                         "description": "geometry_problem.png",
                     }
                 ],
-                "blocking": True,
+                "blocking": False,
                 "cascadeConfig": {
                     "plannerConfig": {
                         "planModel": plan_model,
                     }
                 },
             },
-            timeout=240,
+            timeout=30,
         )
 
-        # 3. 读取模型响应
-        steps_res = agy_rpc(server_info, "GetCascadeTrajectorySteps", {"cascadeId": cascade_id})
+        # 3. 轮询读取模型响应（最长等待 900 秒 = 15 分钟，每 2 秒查询一次）
+        start_time = time.time()
+        max_wait_seconds = 900
         model_reply = ""
-        for st in reversed(steps_res.get("steps", [])):
-            if st.get("type") == "CORTEX_STEP_TYPE_PLANNER_RESPONSE":
-                resp_text = st.get("plannerResponse", {}).get("response", "")
-                if resp_text.strip():
-                    model_reply = resp_text
-                    break
+        poll_count = 0
+        print(f"[{time.strftime('%H:%M:%S')}] 🚀 已发起模型推演请求 (模型: {model_slug})，开始轮询等待结果...", flush=True)
+        while time.time() - start_time < max_wait_seconds:
+            time.sleep(2)
+            poll_count += 1
+            if poll_count % 10 == 0:
+                print(f"[{time.strftime('%H:%M:%S')}] ⏳ 模型正在深度思考与排版板书... (已耗时 {int(time.time() - start_time)} 秒)", flush=True)
+
+            try:
+                steps_res = agy_rpc(
+                    server_info,
+                    "GetCascadeTrajectorySteps",
+                    {"cascadeId": cascade_id},
+                    timeout=15,
+                )
+            except Exception as ep:
+                if poll_count % 10 == 0:
+                    print(f"[{time.strftime('%H:%M:%S')}] ⚠️ 轮询暂未就绪 ({ep})，继续等待...", flush=True)
+                continue
+
+            steps = steps_res.get("steps", [])
+            for st in reversed(steps):
+                st_type = st.get("type", "")
+                if st_type in ("CORTEX_STEP_TYPE_PLANNER_RESPONSE", "PLANNER_RESPONSE"):
+                    status = st.get("status", "")
+                    resp_text = (
+                        st.get("plannerResponse", {}).get("response", "")
+                        or st.get("content", "")
+                    )
+                    # 当且仅当生成完毕且有实质内容时接收
+                    if resp_text.strip():
+                        if status in ("CORTEX_STEP_STATUS_DONE", "DONE", "SUCCESS") or st.get("plannerResponse", {}).get("finishReason"):
+                            model_reply = resp_text
+                            break
+                        # 若已出现完整 JSON 闭合也判定完成
+                        elif resp_text.strip().endswith("}") or resp_text.strip().endswith("```"):
+                            model_reply = resp_text
+                            break
+            if model_reply:
+                print(f"[{time.strftime('%H:%M:%S')}] 🎉 模型推演完成！耗时 {int(time.time() - start_time)} 秒，输出 {len(model_reply)} 字符", flush=True)
+                break
 
         if not model_reply:
-            raise RuntimeError("模型未返回有效内容，请重试。")
+            raise RuntimeError(f"模型在 {int(time.time() - start_time)} 秒内未完成推演，请重试或切换为 Medium 模式。")
 
         lesson_data = extract_json_from_text(model_reply)
 
@@ -289,10 +396,12 @@ def solve_problem_automatically(image_bytes: bytes, mime_type: str, extra_note: 
         js_content = "window.LESSON_DATA = " + json.dumps(lesson_data, ensure_ascii=False, indent=2) + ";\n"
         LESSON_JS_PATH.write_text(js_content, encoding="utf-8")
 
+        elapsed_seconds = round(time.time() - start_time, 1)
         return {
             "lessonData": lesson_data,
             "model": model_slug,
             "user": server_info["user"],
+            "elapsed": elapsed_seconds,
         }
     finally:
         # 5. 自动清理临时会话，保持用户的 Antigravity 聊天列表干净无污染
@@ -373,6 +482,7 @@ class MathTutorHandler(SimpleHTTPRequestHandler):
                     "mode": "auto",
                     "model": result["model"],
                     "user": result["user"],
+                    "elapsed": result.get("elapsed", 0),
                     "lessonData": result["lessonData"],
                 })
             except Exception as e:

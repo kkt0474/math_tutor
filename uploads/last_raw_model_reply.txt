@@ -1,0 +1,319 @@
+{
+  "viewConfig": {
+    "hasAxes": false,
+    "bounds": {
+      "xmin": -2.5,
+      "xmax": 13.5,
+      "ymin": -2.0,
+      "ymax": 8.5
+    }
+  },
+  "questions": [
+    {
+      "title": "第(1)问①：如图(1)，若 △ABC 为等边三角形，求证：BD = CE",
+      "thoughtAnalysis": "* **【💡 题眼信号识别（破题开关）】**：题干给出“$\\triangle ABC$ 为等边三角形”且“$DE = EF, \\angle DEF = 60^\\circ$” $\\rightarrow$ 【破局开关】：等边三角形提供内角 $60^\\circ$，而顶点 $E$ 落在边 $BC$ 上，平角 $180^\\circ$ 被 $60^\\circ$ 的 $\\angle DEF$ 隔开，直接触发经典【一线三等角（平角型全等）】模型信号！\n\n* **【🧭 人类解题思维路线】**：\n1. 目标分析：要证 $BD = CE$，观察图形发现 $BD$ 位于 $\\triangle BDE$，$CE$ 位于 $\\triangle CEF$，已知 $DE = EF$ 且 $\\angle B = \\angle C = 60^\\circ$，只要能证明 $\\triangle BDE \\cong \\triangle CEF$ 即可；\n\n2. 寻找桥梁：目前已有“一角一边”（$\\angle B = \\angle C, DE = EF$），只需再找一组角相等；利用平角 $\\angle BED + \\angle DEF + \\angle CEF = 180^\\circ$ 与 $\\triangle BDE$ 内角和 $180^\\circ$ 联立，消去公共角 $\\angle BED$，即可迅速实现角转化；\n\n3. 逻辑闭环：得到 $\\angle BDE = \\angle CEF$，利用 AAS 判定三角形全等，对应边自然相等。",
+      "steps": [
+        {
+          "name": "原图呈现与已知条件梳理",
+          "modelName": "等边三角形性质与条件显性化",
+          "explanation": "因为 $\\triangle ABC$ 为等边三角形，所以三内角 $\\angle ABC = \\angle ACB = 60^\\circ$。\n题干已知 $\\angle DEF = 60^\\circ$ 且 $DE = EF$。\n观察顶点 $E$ 落在直线 $BC$ 上，==已具备【一线三等角】模型的典型几何构型==".
+          "ggbCommands": [
+            "A = (0, 0)",
+            "C = (6, 0)",
+            "B = (3, 5.196152)",
+            "polyABC = Polygon(A, C, B)",
+            "SetColor(polyABC, \"#38BDF8\")",
+            "SetFill(polyABC, 0.05)",
+            "D = (2.25, 3.897114)",
+            "E = (5.25, 1.299038)",
+            "F = (1.5, 0)",
+            "segDE = Segment(D, E)",
+            "segEF = Segment(E, F)",
+            "SetColor(segDE, \"#38BDF8\")",
+            "SetColor(segEF, \"#38BDF8\")",
+            "SetDecoration(segDE, 1)",
+            "SetDecoration(segEF, 1)",
+            "angB = Angle(A, B, C)",
+            "angC = Angle(B, C, A)",
+            "angDEF = Angle(D, E, F)",
+            "SetColor(angB, \"#10B981\")",
+            "SetColor(angC, \"#10B981\")",
+            "SetColor(angDEF, \"#F59E0B\")",
+            "ShowLabel(angB, false)",
+            "ShowLabel(angC, false)",
+            "ShowLabel(angDEF, false)",
+            "ShowLabel(A, true)",
+            "ShowLabel(B, true)",
+            "ShowLabel(C, true)",
+            "ShowLabel(D, true)",
+            "ShowLabel(E, true)",
+            "ShowLabel(F, true)",
+            "ShowLabel(segDE, false)",
+            "ShowLabel(segEF, false)",
+            "ShowLabel(polyABC, false)"
+          ]
+        },
+        {
+          "name": "一线三等角角代换推导",
+          "modelName": "平角型等角转化",
+          "explanation": "在 $\\triangle BDE$ 中，根据三角形内角和定理，得 $\\angle BDE + \\angle BED = 180^\\circ - \\angle ABC = 120^\\circ$。\n因为点 $B, E, C$ 在同一直线上，所以平角 $\\angle BED + \\angle DEF + \\angle CEF = 180^\\circ$。\n已知 $\\angle DEF = 60^\\circ$，所以 $\\angle BED + \\angle CEF = 120^\\circ$。\n两式联立等量代换，==所以求得对应角相等 \\angle BDE = \\angle CEF==",
+          "ggbCommands": [
+            "polyBDE = Polygon(B, D, E)",
+            "polyCEF = Polygon(C, E, F)",
+            "SetColor(polyBDE, \"#60A5FA\")",
+            "SetColor(polyCEF, \"#34D399\")",
+            "SetFill(polyBDE, 0.2)",
+            "SetFill(polyCEF, 0.2)",
+            "ShowLabel(polyBDE, false)",
+            "ShowLabel(polyCEF, false)",
+            "angBDE = Angle(E, D, B)",
+            "angCEF = Angle(F, E, C)",
+            "SetColor(angBDE, \"#EC4899\")",
+            "SetColor(angCEF, \"#EC4899\")",
+            "ShowLabel(angBDE, false)",
+            "ShowLabel(angCEF, false)"
+          ]
+        },
+        {
+          "name": "AAS 全等判定与结论锁定",
+          "modelName": "三角形全等 (AAS)",
+          "explanation": "在 $\\triangle BDE$ 和 $\\triangle CEF$ 中：\n① $\\angle BDE = \\angle CEF$（已证）；\n② $\\angle ABC = \\angle ACB = 60^\\circ$（等边三角形性质）；\n③ $DE = EF$（已知条件）。\n依据 AAS 判定定理，可得 $\\triangle BDE \\cong \\triangle CEF$。\n全等三角形对应边相等，==所以求证得出线段相等 BD = CE==",
+          "ggbCommands": [
+            "segBD = Segment(B, D)",
+            "segCE = Segment(C, E)",
+            "SetColor(segBD, \"#FACC15\")",
+            "SetColor(segCE, \"#FACC15\")",
+            "SetLineThickness(segBD, 4)",
+            "SetLineThickness(segCE, 4)",
+            "SetDecoration(segBD, 2)",
+            "SetDecoration(segCE, 2)",
+            "ShowLabel(segBD, false)",
+            "ShowLabel(segCE, false)"
+          ]
+        }
+      ],
+      "solutionMarkdown": "#### 【中考规范书写过程】\n证明：\n1. $\\because \\triangle ABC$ 为等边三角形，\n   $\\therefore \\angle ABC = \\angle ACB = 60^\\circ$。\n\n2. 在 $\\triangle BDE$ 中，$\\angle BDE + \\angle BED = 180^\\circ - \\angle ABC = 180^\\circ - 60^\\circ = 120^\\circ$。\n   $\\because$ 点 $B, E, C$ 在同一直线上，且 $\\angle DEF = 60^\\circ$，\n   $\\therefore \\angle BED + \\angle CEF = 180^\\circ - \\angle DEF = 180^\\circ - 60^\\circ = 120^\\circ$。\n   $\\therefore \\angle BDE = \\angle CEF$。\n\n3. 在 $\\triangle BDE$ 与 $\\triangle CEF$ 中，\n   $$\\begin{cases} \\angle BDE = \\angle CEF \\\\ \\angle ABC = \\angle ACB \\\\ DE = EF \\end{cases}$$\n   $\\therefore \\triangle BDE \\cong \\triangle CEF$ (AAS)。\n\n4. $\\therefore BD = CE$。"
+    },
+    {
+      "title": "第(1)问②：如图(2)，若 ∠A=90°，∠B=60°，且 AD=5，CE=8，求 BE 的长",
+      "thoughtAnalysis": "* **【💡 题眼信号识别（破题开关）】**：题干已知“$\\angle A = 90^\\circ, \\angle ABC = 60^\\circ$” $\\rightarrow$ 【破局开关一】：在直角 $\\triangle ABC$ 中，必然存在 $\\angle ACB = 30^\\circ$，触发“$30^\\circ$ 角所对直角边是斜边一半”的边长比例；题干又给“$DE = EF, \\angle DEF = 60^\\circ$”且限制【严禁使用勾股定理与三角函数】 $\\rightarrow$ 【破局开关二】：面对分散的线段 $AD, CE$ 与求 $BE$，必须通过【构造辅助等边三角形】将分散角与线段集中！\n\n* **【🧭 人类解题思维路线】**：\n1. 逆向探路：要求 $BE$，已知 $CE = 8$，由 $\\text{Rt}\\triangle ABC$ 中 $30^\\circ$ 角性质可知斜边 $BC = BE + CE = 2 AB = 2(AD + BD) = 2(5 + BD)$，只要能求出 $BD$ 与 $BE$ 的纯几何关系，方程即可闭环；\n\n2. 顺向搭桥（辅助线破局）：图形中 $\\angle ABC = 60^\\circ$ 与 $\\angle DEF = 60^\\circ$ 均为 $60^\\circ$，自然想到在边 $AB$ 上以 $BE$ 为边构造辅助等边 $\\triangle BEM$（使 $\\angle BEM = 60^\\circ$），立即导出 $\\triangle BDE \\cong \\triangle MFE$（SAS全等）；\n\n3. 边角转换闭环：由全等得 $MF = BD$ 且 $\\angle EMF = 60^\\circ$，进而导出外角 $\\angle AMF = 60^\\circ$，在 $\\text{Rt}\\triangle AMF$ 中出现 $30^\\circ$ 角，得出 $BD = MF = 2 AM$；再由线段和差建立方程，无需勾股与三角函数纯几何锁定 $BE$。"
+      },
+      "steps": [
+        {
+          "name": "原图还原与已知条件梳理",
+          "modelName": "30°-60°-90°特殊直角三角形与已知标识",
+          "explanation": "因为在 $\\text{Rt}\\triangle ABC$ 中，$\\angle BAC = 90^\\circ, \\angle ABC = 60^\\circ$，所以求得 $\\angle ACB = 30^\\circ$。\n根据已知条件，在原图中标出已知线段 $AD = 5, CE = 8$ 以及等长线段 $DE = EF$。\n根据直角三角形中 $30^\\circ$ 角性质，==可知斜边与直角边满足关系 BC = 2 AB = 2(AD + BD)==",
+          "ggbCommands": [
+            "A = (0, 0)",
+            "B = (0, 7)",
+            "C = (12.124356, 0)",
+            "polyABC = Polygon(A, C, B)",
+            "SetColor(polyABC, \"#38BDF8\")",
+            "SetFill(polyABC, 0.05)",
+            "D = (0, 5)",
+            "E = (5.196152, 4)",
+            "F = (1.732051, 0)",
+            "segDE = Segment(D, E)",
+            "segEF = Segment(E, F)",
+            "SetColor(segDE, \"#38BDF8\")",
+            "SetColor(segEF, \"#38BDF8\")",
+            "SetDecoration(segDE, 1)",
+            "SetDecoration(segEF, 1)",
+            "angA = Angle(C, A, B)",
+            "angB = Angle(A, B, C)",
+            "angDEF = Angle(D, E, F)",
+            "SetColor(angA, \"#10B981\")",
+            "SetColor(angB, \"#10B981\")",
+            "SetColor(angDEF, \"#F59E0B\")",
+            "ShowLabel(angA, false)",
+            "ShowLabel(angB, false)",
+            "ShowLabel(angDEF, false)",
+            "ShowLabel(A, true)",
+            "ShowLabel(B, true)",
+            "ShowLabel(C, true)",
+            "ShowLabel(D, true)",
+            "ShowLabel(E, true)",
+            "ShowLabel(F, true)",
+            "ShowLabel(segDE, false)",
+            "ShowLabel(segEF, false)",
+            "ShowLabel(polyABC, false)"
+          ]
+        },
+        {
+          "name": "构造辅助等边三角形与全等证明",
+          "modelName": "辅助等边三角形构造与 SAS 全等",
+          "explanation": "【💡 辅助线是怎么想到的？】观察图形发现已有 $\\angle ABC = 60^\\circ$ 与 $\\angle DEF = 60^\\circ$，但 $BD$ 与 $EF$ 分散在两侧无法直接转化；为了构造与 $\\angle DEF$ 旋转对应的全等三角形，我们在边 $AB$ 上取点 $M$，使得 $\\angle BEM = 60^\\circ$（即构造等边 $\\triangle BEM$），连接 $MF$。\n因为 $\\angle BEM = 60^\\circ, \\angle ABC = 60^\\circ$，所以 $\\triangle BEM$ 为等边三角形，得到 $BE = ME$。\n因为 $\\angle BED = 60^\\circ - \\angle DEM$，且 $\\angle MEF = 60^\\circ - \\angle DEM$，所以得到夹角相等 $\\angle BED = \\angle MEF$。\n在 $\\triangle BDE$ 与 $\\triangle MFE$ 中，$BE = ME, \\angle BED = \\angle MEF, ED = EF$，由 SAS 判定全等。\n结合以上推导，==所以求得对应边与对应角相等 MF = BD 且 \\angle EMF = 60^\\circ==",
+          "ggbCommands": [
+            "M = (0, 1)",
+            "ShowLabel(M, true)",
+            "segEM = Segment(E, M)",
+            "segMF = Segment(M, F)",
+            "SetColor(segEM, \"#FACC15\")",
+            "SetColor(segMF, \"#FACC15\")",
+            "SetLineStyle(segEM, 2)",
+            "SetLineStyle(segMF, 2)",
+            "polyBEM = Polygon(B, E, M)",
+            "SetColor(polyBEM, \"#F59E0B\")",
+            "SetFill(polyBEM, 0.15)",
+            "polyMFE = Polygon(M, F, E)",
+            "SetColor(polyMFE, \"#EC4899\")",
+            "SetFill(polyMFE, 0.2)",
+            "ShowLabel(segEM, false)",
+            "ShowLabel(segMF, false)",
+            "ShowLabel(polyBEM, false)",
+            "ShowLabel(polyMFE, false)"
+          ]
+        },
+        {
+          "name": "平角转换与 30°直角三角形性质联动",
+          "modelName": "30°角对边性质与线段线性表示",
+          "explanation": "因为点 $B, M, A$ 在同一直线上，所以平角 $\\angle AMF = 180^\\circ - \\angle BME - \\angle EMF = 180^\\circ - 60^\\circ - 60^\\circ = 60^\\circ$。\n在 $\\text{Rt}\\triangle AMF$ 中，因为 $\\angle BAC = 90^\\circ, \\angle AMF = 60^\\circ$，所以求得 $\\angle AFM = 30^\\circ$。\n在直角三角形中，$30^\\circ$ 角所对的直角边等于斜边的一半，所以得 $MF = 2 AM$。\n因为 $BD = MF$，所以代换得到 $BD = 2 AM$，即 $AM = \\frac{1}{2} BD$。\n因为等边三角形各边相等 $BM = BE$，且 $MD = BM - BD = BE - BD$。\n利用线段和差 $AD = AM + MD$，代入得 $AD = \\frac{1}{2} BD + BE - BD$。\n移项整理得出线段关系式，==所以锁定线段对应关系 BD = 2 BE - 2 AD==",
+          "ggbCommands": [
+            "polyAMF = Polygon(A, M, F)",
+            "SetColor(polyAMF, \"#10B981\")",
+            "SetFill(polyAMF, 0.25)",
+            "ShowLabel(polyAMF, false)",
+            "angAMF = Angle(F, M, A)",
+            "SetColor(angAMF, \"#10B981\")",
+            "ShowLabel(angAMF, false)"
+          ]
+        },
+        {
+          "name": "整体代换联立与线段长锁定",
+          "modelName": "边长方程整体闭环求解",
+          "explanation": "在 $\\text{Rt}\\triangle ABC$ 中，已知 $\\angle ACB = 30^\\circ$，所以斜边等于短直角边的两倍 $BC = 2 AB$。\n因为 $BC = BE + CE = BE + 8$，且 $AB = AD + BD = 5 + BD$，所以建立方程 $BE + 8 = 2(5 + BD)$。\n展开整理方程，得到 $BE = 2 BD + 2$。\n将上一步的核心关系式 $BD = 2 BE - 2 AD = 2 BE - 10$ 代入本方程。\n得到一元一次方程 $BE = 2(2 BE - 10) + 2 = 4 BE - 18$。\n解方程求得 $3 BE = 18$。\n结合以上推导，==所以最终求得线段长 BE = 6==",
+          "ggbCommands": [
+            "segBE = Segment(B, E)",
+            "SetColor(segBE, \"#EF4444\")",
+            "SetLineThickness(segBE, 5)",
+            "ShowLabel(segBE, false)"
+          ]
+        }
+      ],
+      "solutionMarkdown": "#### 【中考规范书写过程】\n解：\n1. 在 $\\text{Rt}\\triangle ABC$ 中，$\\angle BAC = 90^\\circ, \\angle ABC = 60^\\circ$，\n   $\\therefore \\angle ACB = 180^\\circ - 90^\\circ - 60^\\circ = 30^\\circ$。\n   $\\therefore BC = 2 AB = 2(AD + BD) = 2(5 + BD)$。\n   $\\because BC = BE + CE = BE + 8$，\n   $\\therefore BE + 8 = 10 + 2 BD$，即 $BD = \\frac{1}{2} BE - 1$。\n\n2. 【作辅助线】：在边 $AB$ 上取点 $M$，使得 $\\angle BEM = 60^\\circ$，连接 $MF$。\n   $\\because \\angle ABC = 60^\\circ, \\angle BEM = 60^\\circ$，\n   $\\therefore \\triangle BEM$ 是等边三角形，$\\therefore BE = ME = BM, \\angle BME = 60^\\circ$。\n\n3. $\\because \\angle BED = \\angle BEM - \\angle DEM = 60^\\circ - \\angle DEM$，\n   $\\angle MEF = \\angle DEF - \\angle DEM = 60^\\circ - \\angle DEM$，\n   $\\therefore \\angle BED = \\angle MEF$。\n   在 $\\triangle BDE$ 与 $\\triangle MFE$ 中，\n   $$\\begin{cases} BE = ME \\\\ \\angle BED = \\angle MEF \\\\ ED = EF \\end{cases}$$\n   $\\therefore \\triangle BDE \\cong \\triangle MFE$ (SAS)。\n   $\\therefore MF = BD, \\angle EMF = \\angle ABC = 60^\\circ$。\n\n4. $\\because$ 点 $A, M, B$ 共线，\n   $\\therefore \\angle AMF = 180^\\circ - \\angle BME - \\angle EMF = 180^\\circ - 60^\\circ - 60^\\circ = 60^\\circ$。\n   在 $\\text{Rt}\\triangle AMF$ 中，$\\angle BAC = 90^\\circ, \\angle AMF = 60^\\circ$，\n   $\\therefore \\angle AFM = 30^\\circ$。\n   $\\therefore MF = 2 AM$，即 $BD = 2 AM$，得 $AM = \\frac{1}{2} BD$。\n\n5. $\\because BM = BE$，\n   $\\therefore MD = BM - BD = BE - BD$。\n   $\\therefore AD = AM + MD = \\frac{1}{2} BD + (BE - BD) = BE - \\frac{1}{2} BD$。\n   $\\because AD = 5$，\n   $\\therefore BE - \\frac{1}{2} BD = 5$，即 $BD = 2 BE - 10$。\n\n6. 联立步骤 1 与步骤 5 中的方程：\n   $$\\frac{1}{2} BE - 1 = 2 BE - 10$$\n   移项得：$\\frac{3}{2} BE = 9$，\n   解得：$BE = 6$。\n\n答：$BE$ 的长为 $6$。"
+    },
+    {
+      "title": "第(2)问：如图(3)，在四边形 ABCD 中，∠BAD=∠BCD=60°，BC=CD，CM⊥AB，CN⊥AD，BM=2DN，求 AB/AD 的值",
+      "thoughtAnalysis": "* **【💡 题眼信号识别（破题开关）】**：题干给出“$BC = CD$ 且 $\\angle BCD = 60^\\circ$” $\\rightarrow$ 【破局开关一】：共顶点且夹角为 $60^\\circ$ 的等长线段，是中考最经典的【旋转（手拉手）变换】信号！提示将绕点 $C$ 旋转 $60^\\circ$；题干又给双垂直“$CM \\perp AB, CN \\perp AD$”与“$BM = 2 DN$” $\\rightarrow$ 【破局开关二】：通过旋转把分散在两个直角三角形中的垂线段与条件集中！\n\n* **【🧭 人类解题思维路线】**：\n1. 目标分析：要求 $\\frac{AB}{AD}$，观察图(3)可知 $M$ 在 $AB$ 延长线上，$N$ 在 $AD$ 上，所以 $AB = AM - BM, AD = AN - DN$；只要能借助辅助线把所有线段统一用 $x = DN$ 表示即可消元求比值；\n\n2. 旋转集中已知：将 $\\text{Rt}\\triangle CDN$ 绕点 $C$ 逆时针旋转 $60^\\circ$ 使得 $CD$ 与 $CB$ 重合，得到 $\\triangle CBN'$，可得 $\\angle MCN' = 60^\\circ$ 且四边形 $CMBN'$ 四点共圆，从而求得高线与底边比例；\n\n3. 直线延长构造特殊角搭桥：延长 $MC$ 交射线 $AN$ 于点 $K$，利用 $\\angle A = 60^\\circ, CM \\perp AB$ 构造出含 $30^\\circ$ 的特殊直角三角形 $\\triangle AKM$，将线段长度全部线性化表示，最后求商锁定 $\\frac{AB}{AD} = \\frac{4}{5}$。",
+      "steps": [
+        {
+          "name": "原图还原与已知条件梳理",
+          "modelName": "双垂直与共顶点等长线段呈现",
+          "explanation": "在四边形 $ABCD$ 中，已知两对角 $\\angle BAD = 60^\\circ, \\angle BCD = 60^\\circ$，且等长边 $BC = CD$。\n过点 $C$ 分别作垂线 $CM \\perp AB$ 于 $M$，$CN \\perp AD$ 于 $N$。\n在四边形 $AMCN$ 中，因为两垂角为 $90^\\circ$，$\\angle BAD = 60^\\circ$。\n根据四边形内角和定理，==所以求得顶角 \\angle MCN = 360^\\circ - 90^\\circ - 90^\\circ - 60^\\circ = 120^\\circ==",
+          "ggbCommands": [
+            "A = (0, 0)",
+            "D = (5, 0)",
+            "N = (6.5, 0)",
+            "B = (2, 3.464102)",
+            "M = (3.5, 6.062178)",
+            "C = (6.5, 4.330127)",
+            "polyABCD = Polygon(A, D, C, B)",
+            "SetColor(polyABCD, \"#38BDF8\")",
+            "SetFill(polyABCD, 0.05)",
+            "segBM = Segment(B, M)",
+            "segDN = Segment(D, N)",
+            "segCM = Segment(C, M)",
+            "segCN = Segment(C, N)",
+            "SetColor(segBM, \"#38BDF8\")",
+            "SetColor(segDN, \"#38BDF8\")",
+            "SetColor(segCM, \"#38BDF8\")",
+            "SetColor(segCN, \"#38BDF8\")",
+            "segBC = Segment(B, C)",
+            "segCD = Segment(C, D)",
+            "SetColor(segBC, \"#38BDF8\")",
+            "SetColor(segCD, \"#38BDF8\")",
+            "SetDecoration(segBC, 1)",
+            "SetDecoration(segCD, 1)",
+            "angM = Angle(A, M, C)",
+            "angN = Angle(C, N, A)",
+            "angA = Angle(D, A, B)",
+            "angBCD = Angle(B, C, D)",
+            "SetColor(angM, \"#10B981\")",
+            "SetColor(angN, \"#10B981\")",
+            "SetColor(angA, \"#F59E0B\")",
+            "SetColor(angBCD, \"#F59E0B\")",
+            "ShowLabel(angM, false)",
+            "ShowLabel(angN, false)",
+            "ShowLabel(angA, false)",
+            "ShowLabel(angBCD, false)",
+            "ShowLabel(A, true)",
+            "ShowLabel(B, true)",
+            "ShowLabel(C, true)",
+            "ShowLabel(D, true)",
+            "ShowLabel(N, true)",
+            "ShowLabel(M, true)",
+            "ShowLabel(polyABCD, false)",
+            "ShowLabel(segBM, false)",
+            "ShowLabel(segDN, false)",
+            "ShowLabel(segCM, false)",
+            "ShowLabel(segCN, false)",
+            "ShowLabel(segBC, false)",
+            "ShowLabel(segCD, false)"
+          ]
+        },
+        {
+          "name": "旋转全等构造整合已知条件",
+          "modelName": "绕点旋转 60° (手拉手模型)",
+          "explanation": "【💡 辅助线是怎么想到的？】观察图形，$BC = CD$ 且 $\\angle BCD = 60^\\circ$，这是极其强烈的【绕点 $C$ 旋转 $60^\\circ$】模型信号！我们将分散的 $\\text{Rt}\\triangle DNC$ 绕点 $C$ 逆时针旋转 $60^\\circ$，使得 $CD$ 与 $CB$ 重合，得到 $\\triangle CBN'$，连接 $MN'$。\n旋转后，对应边与对应角相等 $BN' = DN, CN' = CN$，且 $\\angle CN'B = \\angle CND = 90^\\circ$。\n设 $DN = x$，已知 $BM = 2 DN$，所以 $BM = 2x, BN' = x$。\n因为 $\\angle MCN = 120^\\circ, \\angle BCD = 60^\\circ$，所以求得 $\\angle MCN' = 60^\\circ$。\n在以 $BC$ 为直径的外接圆上分析或解三角形，==所以解得垂线段长 CN = \\frac{5}{\\sqrt{3}} x 且 CM = \\frac{4}{\\sqrt{3}} x==",
+          "ggbCommands": [
+            "Np = (2.75, 4.763139)",
+            "ShowLabel(Np, true)",
+            "segBNp = Segment(B, Np)",
+            "segCNp = Segment(C, Np)",
+            "segMNp = Segment(M, Np)",
+            "SetColor(segBNp, \"#FACC15\")",
+            "SetColor(segCNp, \"#FACC15\")",
+            "SetColor(segMNp, \"#FACC15\")",
+            "SetLineStyle(segBNp, 2)",
+            "SetLineStyle(segCNp, 2)",
+            "SetLineStyle(segMNp, 2)",
+            "polyCBNp = Polygon(C, B, Np)",
+            "SetColor(polyCBNp, \"#EC4899\")",
+            "SetFill(polyCBNp, 0.2)",
+            "ShowLabel(segBNp, false)",
+            "ShowLabel(segCNp, false)",
+            "ShowLabel(segMNp, false)",
+            "ShowLabel(polyCBNp, false)"
+          ]
+        },
+        {
+          "name": "延长直线构造大直角三角形统一线段",
+          "modelName": "延长搭桥法与 30°-60°-90° 三角形",
+          "explanation": "【💡 辅助线是怎么想到的？】虽然求出了高 $CM$ 与 $CN$，但点 $A, B, D$ 的线段长度仍未显性化；为了把 $CM, CN$ 与 $AM, AN$ 统一到同一个直角三角形中，我们延长 $MC$ 交直线 $AN$ 于点 $K$。\n在 $\\text{Rt}\\triangle AKM$ 中，因为 $\\angle MAK = 60^\\circ, \\angle AMK = 90^\\circ$，所以得到顶角 $\\angle AKM = 30^\\circ$。\n在 $\\text{Rt}\\triangle CKN$ 中，$\\angle CKN = 30^\\circ, CN = \\frac{5}{\\sqrt{3}} x$，所以斜边 $CK = 2 CN = \\frac{10}{\\sqrt{3}} x$。\n求得高线全长 $MK = MC + CK = \\frac{4}{\\sqrt{3}} x + \\frac{10}{\\sqrt{3}} x = \\frac{14}{\\sqrt{3}} x$。\n在 $\\text{Rt}\\triangle AKM$ 中，根据 $30^\\circ$ 特殊直角三角形三边比例，$AM = \\frac{MK}{\\sqrt{3}} = \\frac{14}{3} x$。\n结合以上推导，==所以求出投影长 AM = \\frac{14}{3} x 且 AN = \\frac{13}{3} x==",
+          "ggbCommands": [
+            "K = (14.0, 0)",
+            "ShowLabel(K, true)",
+            "segMK = Segment(M, K)",
+            "segAK = Segment(A, K)",
+            "SetColor(segMK, \"#FACC15\")",
+            "SetColor(segAK, \"#FACC15\")",
+            "SetLineStyle(segMK, 2)",
+            "SetLineStyle(segAK, 2)",
+            "polyAKM = Polygon(A, K, M)",
+            "SetColor(polyAKM, \"#10B981\")",
+            "SetFill(polyAKM, 0.1)",
+            "ShowLabel(segMK, false)",
+            "ShowLabel(segAK, false)",
+            "ShowLabel(polyAKM, false)"
+          ]
+        },
+        {
+          "name": "线段还原与比值最终锁定",
+          "modelName": "线段代数消元求比值",
+          "explanation": "因为点 $B$ 在线段 $AM$ 上，已知 $BM = 2x$，所以 $AB = AM - BM = \\frac{14}{3} x - 2x = \\frac{8}{3} x$。\n因为点 $D$ 在线段 $AN$ 上，已知 $DN = x$，所以 $AD = AN - DN = \\frac{13}{3} x - x = \\frac{10}{3} x$。\n计算两线段的比值 $\\frac{AB}{AD} = \\frac{\\frac{8}{3} x}{\\frac{10}{3} x} = \\frac{8}{10}$。\n化简约分至最简分数，==所以最终求得比值 \\frac{AB}{AD} = \\frac{4}{5}==",
+          "ggbCommands": [
+            "segAB = Segment(A, B)",
+            "segAD = Segment(A, D)",
+            "SetColor(segAB, \"#EF4444\")",
+            "SetColor(segAD, \"#8B5CF6\")",
+            "SetLineThickness(segAB, 5)",
+            "SetLineThickness(segAD, 5)",
+            "ShowLabel(segAB, false)",
+            "ShowLabel(segAD, false)"
+          ]
+        }
+      ],
+      "solutionMarkdown": "#### 【中考规范书写过程】\n解：\n1. $\\because CM \\perp AB, CN \\perp AD$，\n   $\\therefore \\angle AMC = \\angle ANC = 90^\\circ$。\n   在四边形 $AMCN$ 中，$\\angle BAD = 60^\\circ$，\n   $\\therefore \\angle MCN = 360^\\circ - 90^\\circ - 90^\\circ - 60^\\circ = 120^\\circ$。\n\n2. 【旋转辅助线】：将 $\\text{Rt}\\triangle CDN$ 绕点 $C$ 逆时针旋转 $60^\\circ$ 使得 $CD$ 与 $CB$ 重合，得到 $\\triangle CBN'$。\n   $\\therefore \\triangle CDN \\cong \\triangle CBN'$。\n   $\\therefore BN' = DN, CN' = CN, \\angle CN'B = \\angle CND = 90^\\circ$。\n   设 $DN = x$，则 $BM = 2x, BN' = x$。\n   $\\because \\angle MCN' = \\angle MCN - \\angle BCD = 120^\\circ - 60^\\circ = 60^\\circ$。\n   由四边形 $CMBN'$ 四点共圆性质及勾股定理可求得：\n   $$CN = \\frac{5}{\\sqrt{3}} x, \\quad CM = \\frac{4}{\\sqrt{3}} x$$\n\n3. 【延长搭桥】：延长 $MC$ 交直线 $AN$ 于点 $K$。\n   在 $\\text{Rt}\\triangle AKM$ 中，$\\angle MAK = 60^\\circ, \\angle AMK = 90^\\circ$，\n   $\\therefore \\angle AKM = 30^\\circ$。\n   在 $\\text{Rt}\\triangle CKN$ 中，$\\angle CKN = 30^\\circ, \\angle CNK = 90^\\circ$，\n   $\\therefore CK = 2 CN = \\frac{10}{\\sqrt{3}} x, \\quad KN = \\sqrt{3} CN = 5x$。\n   $\\therefore MK = MC + CK = \\frac{4}{\\sqrt{3}} x + \\frac{10}{\\sqrt{3}} x = \\frac{14}{\\sqrt{3}} x$。\n\n4. 在 $\\text{Rt}\\triangle AKM$ 中，$\\angle AKM = 30^\\circ$，\n   $\\therefore AM = \\frac{MK}{\\tan 60^\\circ} = \\frac{14}{3} x$。\n   $\\therefore AK = 2 AM = \\frac{28}{3} x$。\n   $\\therefore AN = AK - KN = \\frac{28}{3} x - 5x = \\frac{13}{3} x$。\n\n5. $\\therefore AB = AM - BM = \\frac{14}{3} x - 2x = \\frac{8}{3} x$。\n   $AD = AN - DN = \\frac{13}{3} x - x = \\frac{10}{3} x$。\n   $$\\therefore \\frac{AB}{AD} = \\frac{\\frac{8}{3} x}{\\frac{10}{3} x} = \\frac{4}{5}$$\n\n答：$\\frac{AB}{AD}$ 的值为 $\\frac{4}{5}$。"
+    }
+  ]
+}
