@@ -7,7 +7,7 @@ description: 归档当前会话上下文并写入 docs/HANDOFF.md。Use when end
 
 请执行会话归档工作流：
 1. 检查本次会话中的代码修改与业务讨论。
-2. 更新根目录下的 `docs/HANDOFF.md`，严格遵循以下结构：
+2. 更新根目录下的 `docs/HANDOFF.md`（若 `docs/` 目录或该文件不存在则自动创建），严格遵循以下结构：
    - **## 1. 需求说明 (Requirements Summary)**：归纳汇总所有业务背景、数据格式、功能边界与规则。
    - **## 2. 当前进度与已踩的坑 (Progress & Lessons Learned)**：
      - 已实现并验证的功能与单测。
