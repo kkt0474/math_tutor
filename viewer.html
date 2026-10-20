@@ -206,45 +206,85 @@
             height: 100%;
         }
 
-        /* 交互式几何标注工具栏 */
+        /* 自由手绘批注工具栏（靠左侧垂直悬浮，对齐红线位置） */
         .annot-bar {
             position: absolute;
-            top: 10px;
-            right: 12px;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
             z-index: 25;
             display: flex;
+            flex-direction: column;
             align-items: center;
             gap: 6px;
-            background: rgba(15, 23, 42, 0.88);
-            backdrop-filter: blur(8px);
+            background: rgba(15, 23, 42, 0.90);
+            backdrop-filter: blur(10px);
             border: 1px solid var(--panel-border);
-            border-radius: 8px;
-            padding: 5px 8px;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+            border-radius: 10px;
+            padding: 8px 6px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
         }
 
-        .annot-label {
-            font-size: 12px;
-            font-weight: 700;
-            color: #94a3b8;
-            margin-right: 2px;
-            user-select: none;
+        .annot-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            width: 100%;
+        }
+
+        .annot-divider {
+            width: 80%;
+            height: 1px;
+            background: rgba(148, 163, 184, 0.2);
+            margin: 2px 0;
+        }
+
+        .annot-colors {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+            padding: 2px 2px;
+            justify-items: center;
+        }
+
+        .color-dot {
+            width: 17px;
+            height: 17px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.15s ease;
+            box-shadow: 0 0 4px rgba(0, 0, 0, 0.4);
+        }
+
+        .color-dot:hover {
+            transform: scale(1.22);
+        }
+
+        .color-dot.active {
+            border-color: #ffffff;
+            transform: scale(1.28);
+            box-shadow: 0 0 8px currentColor;
         }
 
         .annot-btn {
-            display: inline-flex;
+            display: flex;
             align-items: center;
+            justify-content: center;
             gap: 5px;
             background: rgba(30, 41, 59, 0.85);
             border: 1px solid rgba(148, 163, 184, 0.2);
             color: #cbd5e1;
-            padding: 5px 10px;
+            padding: 6px 8px;
             border-radius: 6px;
             font-size: 12px;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.15s ease;
             user-select: none;
+            white-space: nowrap;
+            width: 100%;
+            box-sizing: border-box;
         }
 
         .annot-btn:hover {
@@ -254,15 +294,41 @@
         }
 
         .annot-btn.active {
-            background: linear-gradient(135deg, rgba(2, 132, 199, 0.3), rgba(37, 99, 235, 0.3));
+            background: linear-gradient(135deg, rgba(2, 132, 199, 0.35), rgba(37, 99, 235, 0.35));
             color: #38bdf8;
             border-color: #38bdf8;
             box-shadow: 0 0 10px rgba(56, 189, 248, 0.35);
         }
 
-        .annot-btn.annot-clear:hover {
-            border-color: #f43f5e;
+        .annot-btn.annot-clear-all {
+            background: rgba(225, 29, 72, 0.18);
+            border-color: rgba(244, 63, 94, 0.4);
             color: #fb7185;
+            font-weight: 700;
+        }
+
+        .annot-btn.annot-clear-all:hover {
+            background: rgba(225, 29, 72, 0.35);
+            border-color: #f43f5e;
+            color: #fff;
+            box-shadow: 0 0 12px rgba(244, 63, 94, 0.45);
+        }
+
+        /* 自由手绘涂鸦画板层（覆盖于 GeoGebra 之上） */
+        #drawingCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 20;
+            pointer-events: none;
+            touch-action: none;
+        }
+
+        #drawingCanvas.drawing-active {
+            pointer-events: auto;
+            cursor: crosshair;
         }
 
         .annot-icon {
@@ -862,27 +928,52 @@
 
             <!-- GeoGebra 交互画板容器 -->
             <div id="ggb-wrapper">
-                <!-- 交互式几何标注工具栏 -->
+                <!-- 自由手绘涂鸦工具栏（左侧垂直悬浮） -->
                 <div class="annot-bar" id="annotBar">
-                    <span class="annot-label">✏️ 标记工具:</span>
-                    <button class="annot-btn" id="btnEqualSeg" onclick="toggleAnnotTool('segEqual')"
-                        title="点击两条线段，为它们打上相同的几何双划线等长标记(||)">
-                        <span class="annot-icon">|=|</span> 标记等长边
-                    </button>
-                    <button class="annot-btn" id="btnEqualAng" onclick="toggleAnnotTool('angEqual')"
-                        title="点击角或相交边，打上等角圆弧标记(⌒)">
-                        <span class="annot-icon">⌒</span> 标记等角
-                    </button>
-                    <button class="annot-btn annot-clear" id="btnClearAnnot" onclick="clearUserAnnotations()"
-                        title="清空当前画板上的所有手动标注">
-                        <span class="annot-icon">🧹</span> 清空标记
-                    </button>
+                    <div class="annot-group">
+                        <button class="annot-btn active" id="btnToolMouse" onclick="setDrawingTool('mouse')"
+                            title="鼠标指针模式：可自由拖动与缩放几何图形">
+                            <span class="annot-icon">👆</span> 鼠标
+                        </button>
+                        <button class="annot-btn" id="btnToolPen" onclick="setDrawingTool('pen')"
+                            title="手绘画笔：按住鼠标直接在图形上画角、画圆弧或圈划重点">
+                            <span class="annot-icon">✏️</span> 画笔
+                        </button>
+                        <button class="annot-btn" id="btnToolHighlighter" onclick="setDrawingTool('highlighter')"
+                            title="荧光笔：半透明高亮涂抹">
+                            <span class="annot-icon">🖍️</span> 荧光笔
+                        </button>
+                    </div>
+
+                    <div class="annot-divider"></div>
+
+                    <div class="annot-colors" id="annotColors">
+                        <span class="color-dot active" style="background: #FACC15; color: #FACC15;" data-color="#FACC15" title="荧光黄" onclick="setDrawingColor('#FACC15')"></span>
+                        <span class="color-dot" style="background: #10B981; color: #10B981;" data-color="#10B981" title="翠绿" onclick="setDrawingColor('#10B981')"></span>
+                        <span class="color-dot" style="background: #F43F5E; color: #F43F5E;" data-color="#F43F5E" title="珊瑚红" onclick="setDrawingColor('#F43F5E')"></span>
+                        <span class="color-dot" style="background: #38BDF8; color: #38BDF8;" data-color="#38BDF8" title="湖水蓝" onclick="setDrawingColor('#38BDF8')"></span>
+                    </div>
+
+                    <div class="annot-divider"></div>
+
+                    <div class="annot-group">
+                        <button class="annot-btn" id="btnUndoDraw" onclick="undoDrawing()"
+                            title="撤销上一笔手绘批注 (快捷键 Ctrl+Z / Cmd+Z)">
+                            <span class="annot-icon">↩️</span> 撤销
+                        </button>
+                        <button class="annot-btn annot-clear-all" id="btnClearAll" onclick="clearAllMarkings()"
+                            title="一键清除当前画板上的所有标记">
+                            <span class="annot-icon">🧹</span> 一键清除
+                        </button>
+                    </div>
                 </div>
 
                 <!-- 悬浮操作指引提示 -->
                 <div class="annot-tip" id="annotTip"></div>
 
                 <div id="ggb-container"></div>
+                <!-- 自由手写涂鸦画板层（置于 GeoGebra 之上） -->
+                <canvas id="drawingCanvas"></canvas>
             </div>
 
             <!-- 分步思维字幕卡片 -->
@@ -982,70 +1073,255 @@
         let curStepIdx = 0;
         let currentImageBase64 = "";
 
-        let activeAnnotTool = null; // 'segEqual' | 'angEqual' | null
-        let pendingSeg = null;
-        let pendingPoints = [];
-        let equalPairIdx = 0;
-        let equalAngIdx = 0;
+        // ==========================================
+        // 自由手绘批注画板系统 (Canvas Freehand Drawing)
+        // ==========================================
+        let currentDrawTool = 'mouse'; // 'mouse' | 'pen' | 'highlighter'
+        let currentDrawColor = '#FACC15'; // 默认荧光黄色
+        let isDrawing = false;
+        let currentStroke = null;
+        let drawStrokes = []; // 笔画数组，用于撤销与重绘
+        let drawCanvas = null;
+        let drawCtx = null;
 
-        const EQUAL_STYLES = [
-            { color: "#F59E0B", decor: 2, label: "双划线 ||" }, // 暖橙色
-            { color: "#EC4899", decor: 3, label: "三划线 |||" }, // 玫粉色
-            { color: "#10B981", decor: 1, label: "单划线 |" },  // 翠绿色
-            { color: "#8B5CF6", decor: 2, label: "双划线 ||" }, // 紫色
-            { color: "#06B6D4", decor: 3, label: "三划线 |||" }  // 青色
-        ];
+        function initDrawingCanvas() {
+            drawCanvas = document.getElementById('drawingCanvas');
+            if (!drawCanvas) return;
+            drawCtx = drawCanvas.getContext('2d');
 
-        const ANG_STYLES = [
-            { color: "#EC4899", decor: 1, label: "单圆弧 ⌒" },
-            { color: "#F59E0B", decor: 2, label: "双圆弧 ⌒⌒" },
-            { color: "#10B981", decor: 3, label: "三圆弧 ⌒⌒⌒" }
-        ];
+            resizeDrawingCanvas();
 
-        function initAnnotationListeners() {
-            if (!ggbApp) return;
+            // 监听窗口与容器尺寸变化自适应
+            window.addEventListener('resize', resizeDrawingCanvas);
+            const wrapper = document.getElementById('ggb-wrapper');
+            if (window.ResizeObserver && wrapper) {
+                new ResizeObserver(() => resizeDrawingCanvas()).observe(wrapper);
+            }
+
+            // 注册 Pointer 事件（原生支持鼠标指针、iPad 触控笔与手指触摸）
+            drawCanvas.addEventListener('pointerdown', handleDrawPointerDown);
+            drawCanvas.addEventListener('pointermove', handleDrawPointerMove);
+            drawCanvas.addEventListener('pointerup', handleDrawPointerUp);
+            drawCanvas.addEventListener('pointercancel', handleDrawPointerUp);
+
+            // 键盘快捷键监听：Ctrl+Z / Cmd+Z 撤销，Escape 返回鼠标模式
+            window.addEventListener('keydown', (e) => {
+                if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z')) {
+                    if (drawStrokes.length > 0) {
+                        e.preventDefault();
+                        undoDrawing();
+                    }
+                } else if (e.key === 'Escape') {
+                    if (currentDrawTool !== 'mouse') {
+                        setDrawingTool('mouse');
+                    }
+                }
+            });
+        }
+
+        function resizeDrawingCanvas() {
+            if (!drawCanvas) return;
+            const wrapper = document.getElementById('ggb-wrapper');
+            if (!wrapper) return;
+            const rect = wrapper.getBoundingClientRect();
+            if (rect.width === 0 || rect.height === 0) return;
+
+            const dpr = window.devicePixelRatio || 1;
+            drawCanvas.width = rect.width * dpr;
+            drawCanvas.height = rect.height * dpr;
+            drawCtx = drawCanvas.getContext('2d');
+            drawCtx.scale(dpr, dpr);
+            redrawCanvasStrokes();
+        }
+
+        function getPointerPos(e) {
+            const rect = drawCanvas.getBoundingClientRect();
+            return {
+                x: e.clientX - rect.left,
+                y: e.clientY - rect.top
+            };
+        }
+
+        function handleDrawPointerDown(e) {
+            if (currentDrawTool === 'mouse') return;
+            e.preventDefault();
+            isDrawing = true;
             try {
-                window.onGgbObjectClicked = function (objName) {
-                    handleGgbObjectClick(objName);
-                };
-                ggbApp.registerClickListener("onGgbObjectClicked");
-            } catch (e) {
-                try {
-                    ggbApp.registerClickListener(handleGgbObjectClick);
-                } catch (err) { }
+                drawCanvas.setPointerCapture(e.pointerId);
+            } catch (err) { }
+
+            const pos = getPointerPos(e);
+            currentStroke = {
+                tool: currentDrawTool,
+                color: currentDrawColor,
+                points: [pos]
+            };
+
+            // 绘制起点小圆点，保证点击也能打点
+            drawSinglePoint(pos, currentDrawTool, currentDrawColor);
+        }
+
+        function handleDrawPointerMove(e) {
+            if (!isDrawing || !currentStroke) return;
+            e.preventDefault();
+            const pos = getPointerPos(e);
+            const pts = currentStroke.points;
+            const lastPos = pts[pts.length - 1];
+
+            // 过滤极微小移动，提升流畅度
+            const dist = Math.hypot(pos.x - lastPos.x, pos.y - lastPos.y);
+            if (dist < 2) return;
+
+            pts.push(pos);
+
+            // 实时增量绘制线段
+            if (pts.length >= 2) {
+                drawSegment(pts[pts.length - 2], pos, currentStroke.tool, currentStroke.color);
             }
         }
 
-        function toggleAnnotTool(tool) {
-            if (activeAnnotTool === tool) {
-                deactivateAnnotTool();
-                return;
-            }
-            activeAnnotTool = tool;
-            pendingSeg = null;
-            pendingPoints = [];
-            updateAnnotToolbarUI();
+        function handleDrawPointerUp(e) {
+            if (!isDrawing) return;
+            isDrawing = false;
+            try {
+                drawCanvas.releasePointerCapture(e.pointerId);
+            } catch (err) { }
 
-            if (tool === 'segEqual') {
-                showAnnotTip("👉 请在画板上点击第 1 条线段（例如线段 AC）");
-            } else if (tool === 'angEqual') {
-                showAnnotTip("👉 请在画板上点击已有的角，或依次点击 3 个顶点标记角");
+            if (currentStroke && currentStroke.points.length > 0) {
+                drawStrokes.push(currentStroke);
+                currentStroke = null;
+                redrawCanvasStrokes(); // 曲线平滑终态重绘
             }
         }
 
-        function deactivateAnnotTool() {
-            activeAnnotTool = null;
-            pendingSeg = null;
-            pendingPoints = [];
-            updateAnnotToolbarUI();
-            hideAnnotTip();
+        function drawSinglePoint(pos, tool, color) {
+            if (!drawCtx) return;
+            drawCtx.save();
+            drawCtx.fillStyle = color;
+            drawCtx.globalAlpha = (tool === 'highlighter') ? 0.4 : 0.95;
+            const r = (tool === 'highlighter') ? 7 : 2;
+            drawCtx.beginPath();
+            drawCtx.arc(pos.x, pos.y, r, 0, Math.PI * 2);
+            drawCtx.fill();
+            drawCtx.restore();
         }
 
-        function updateAnnotToolbarUI() {
-            const segBtn = document.getElementById('btnEqualSeg');
-            const angBtn = document.getElementById('btnEqualAng');
-            if (segBtn) segBtn.classList.toggle('active', activeAnnotTool === 'segEqual');
-            if (angBtn) angBtn.classList.toggle('active', activeAnnotTool === 'angEqual');
+        function drawSegment(p1, p2, tool, color) {
+            if (!drawCtx) return;
+            drawCtx.save();
+            drawCtx.lineCap = 'round';
+            drawCtx.lineJoin = 'round';
+            drawCtx.strokeStyle = color;
+            if (tool === 'highlighter') {
+                drawCtx.lineWidth = 14;
+                drawCtx.globalAlpha = 0.38;
+            } else {
+                drawCtx.lineWidth = 3.5;
+                drawCtx.globalAlpha = 0.95;
+            }
+            drawCtx.beginPath();
+            drawCtx.moveTo(p1.x, p1.y);
+            drawCtx.lineTo(p2.x, p2.y);
+            drawCtx.stroke();
+            drawCtx.restore();
+        }
+
+        function redrawCanvasStrokes() {
+            if (!drawCanvas || !drawCtx) return;
+            const rect = drawCanvas.getBoundingClientRect();
+            drawCtx.clearRect(0, 0, rect.width, rect.height);
+
+            drawStrokes.forEach(stroke => {
+                const pts = stroke.points;
+                if (!pts || pts.length === 0) return;
+
+                if (pts.length === 1) {
+                    drawSinglePoint(pts[0], stroke.tool, stroke.color);
+                    return;
+                }
+
+                drawCtx.save();
+                drawCtx.lineCap = 'round';
+                drawCtx.lineJoin = 'round';
+                drawCtx.strokeStyle = stroke.color;
+                if (stroke.tool === 'highlighter') {
+                    drawCtx.lineWidth = 14;
+                    drawCtx.globalAlpha = 0.38;
+                } else {
+                    drawCtx.lineWidth = 3.5;
+                    drawCtx.globalAlpha = 0.95;
+                }
+
+                drawCtx.beginPath();
+                drawCtx.moveTo(pts[0].x, pts[0].y);
+
+                // 使用贝塞尔中点插值实现高品质平滑曲线
+                for (let i = 1; i < pts.length - 1; i++) {
+                    const midX = (pts[i].x + pts[i + 1].x) / 2;
+                    const midY = (pts[i].y + pts[i + 1].y) / 2;
+                    drawCtx.quadraticCurveTo(pts[i].x, pts[i].y, midX, midY);
+                }
+                drawCtx.lineTo(pts[pts.length - 1].x, pts[pts.length - 1].y);
+                drawCtx.stroke();
+                drawCtx.restore();
+            });
+        }
+
+        function setDrawingTool(tool) {
+            currentDrawTool = tool;
+
+            const canvas = document.getElementById('drawingCanvas');
+            if (canvas) {
+                canvas.classList.toggle('drawing-active', tool !== 'mouse');
+            }
+
+            document.getElementById('btnToolMouse')?.classList.toggle('active', tool === 'mouse');
+            document.getElementById('btnToolPen')?.classList.toggle('active', tool === 'pen');
+            document.getElementById('btnToolHighlighter')?.classList.toggle('active', tool === 'highlighter');
+
+            if (tool === 'pen') {
+                showAnnotTip("✏️ 手绘画笔已激活：按住鼠标直接在图形上画角、画圆弧或写批注", 2500);
+            } else if (tool === 'highlighter') {
+                showAnnotTip("🖍️ 荧光笔已激活：按住鼠标直接涂抹重点区域", 2500);
+            } else {
+                showAnnotTip("👆 鼠标模式：可正常拖拽与缩放几何图形", 1500);
+            }
+        }
+
+        function setDrawingColor(color) {
+            currentDrawColor = color;
+            document.querySelectorAll('#annotColors .color-dot').forEach(dot => {
+                dot.classList.toggle('active', dot.getAttribute('data-color') === color);
+            });
+            // 若当前处于鼠标模式，点击颜色自动切换为画笔模式，方便用户直接画
+            if (currentDrawTool === 'mouse') {
+                setDrawingTool('pen');
+            }
+        }
+
+        function undoDrawing() {
+            if (drawStrokes.length > 0) {
+                drawStrokes.pop();
+                redrawCanvasStrokes();
+                showAnnotTip("↩️ 已撤销上一笔批注", 1500);
+            } else {
+                showAnnotTip("⚠️ 没有可撤销的手绘笔画", 1500);
+            }
+        }
+
+        function clearAllMarkings() {
+            // 1. 清空所有自由手绘笔画
+            drawStrokes = [];
+            currentStroke = null;
+            if (drawCanvas && drawCtx) {
+                const rect = drawCanvas.getBoundingClientRect();
+                drawCtx.clearRect(0, 0, rect.width, rect.height);
+            }
+            showAnnotTip("🧹 已清空所有标记", 1800);
+        }
+
+        function clearUserAnnotations() {
+            clearAllMarkings();
         }
 
         function showAnnotTip(text, duration = 0) {
@@ -1067,103 +1343,6 @@
             if (tip) tip.style.display = 'none';
         }
 
-        function getFriendlyObjName(name) {
-            if (!name) return "";
-            if (name.startsWith("seg")) {
-                return name.replace(/^seg/, '').replace(/_.*$/, '');
-            }
-            if (name.startsWith("ang")) {
-                return "∠" + name.replace(/^ang/, '').replace(/_.*$/, '');
-            }
-            return name;
-        }
-
-        function handleGgbObjectClick(objName) {
-            if (!activeAnnotTool || !ggbApp || !objName) return;
-            const objType = ggbApp.getObjectType(objName);
-
-            if (activeAnnotTool === 'segEqual') {
-                if (objType !== 'segment' && objType !== 'line') {
-                    if (objType === 'point') {
-                        showAnnotTip("💡 请点击具体的【线段】中间位置，而不是顶点");
-                    } else if (objType === 'polygon') {
-                        showAnnotTip("💡 请点击具体的【线段边缘】（如 AC 或 BC）");
-                    }
-                    return;
-                }
-
-                if (!pendingSeg) {
-                    pendingSeg = objName;
-                    ggbApp.evalCommand(`SetColor(${objName}, "#F59E0B")`);
-                    ggbApp.evalCommand(`SetLineThickness(${objName}, 5)`);
-                    const name = getFriendlyObjName(objName);
-                    showAnnotTip(`👉 已选中第 1 条线段【${name}】，请点击与之相等的第 2 条线段`);
-                } else {
-                    if (objName === pendingSeg) {
-                        showAnnotTip("⚠️ 不能重复选择同一条线段，请点击另一条相等线段");
-                        return;
-                    }
-                    const st = EQUAL_STYLES[equalPairIdx % EQUAL_STYLES.length];
-                    ggbApp.evalCommand(`SetColor(${pendingSeg}, "${st.color}")`);
-                    ggbApp.evalCommand(`SetColor(${objName}, "${st.color}")`);
-                    ggbApp.evalCommand(`SetLineThickness(${pendingSeg}, 4)`);
-                    ggbApp.evalCommand(`SetLineThickness(${objName}, 4)`);
-                    ggbApp.evalCommand(`SetDecoration(${pendingSeg}, ${st.decor})`);
-                    ggbApp.evalCommand(`SetDecoration(${objName}, ${st.decor})`);
-
-                    const name1 = getFriendlyObjName(pendingSeg);
-                    const name2 = getFriendlyObjName(objName);
-                    showAnnotTip(`🎉 成功标记等长边：线段【${name1}】=【${name2}】(${st.label})`);
-                    equalPairIdx++;
-                    pendingSeg = null;
-
-                    setTimeout(() => {
-                        if (activeAnnotTool === 'segEqual') {
-                            showAnnotTip("👉 继续点击两条线段标记下一组相等边，或再次点击按钮退出");
-                        }
-                    }, 2500);
-                }
-            } else if (activeAnnotTool === 'angEqual') {
-                if (objType === 'angle') {
-                    const st = ANG_STYLES[equalAngIdx % ANG_STYLES.length];
-                    ggbApp.evalCommand(`SetColor(${objName}, "${st.color}")`);
-                    ggbApp.evalCommand(`SetDecoration(${objName}, ${st.decor})`);
-                    ggbApp.evalCommand(`SetLineThickness(${objName}, 4)`);
-                    showAnnotTip(`🎉 已标记等角：【${getFriendlyObjName(objName)}】(${st.label})`);
-                    equalAngIdx++;
-                } else if (objType === 'point') {
-                    pendingPoints.push(objName);
-                    if (pendingPoints.length === 1) {
-                        showAnnotTip(`👉 已选第 1 个点【${objName}】，请继续点击顶点`);
-                    } else if (pendingPoints.length === 2) {
-                        showAnnotTip(`👉 已选顶点【${pendingPoints[1]}】，请点击最后一点完成角定义`);
-                    } else if (pendingPoints.length === 3) {
-                        const angName = "userAng_" + Date.now();
-                        const st = ANG_STYLES[equalAngIdx % ANG_STYLES.length];
-                        ggbApp.evalCommand(`${angName} = Angle(${pendingPoints[0]}, ${pendingPoints[1]}, ${pendingPoints[2]})`);
-                        ggbApp.evalCommand(`SetColor(${angName}, "${st.color}")`);
-                        ggbApp.evalCommand(`SetDecoration(${angName}, ${st.decor})`);
-                        ggbApp.evalCommand(`ShowLabel(${angName}, false)`);
-                        showAnnotTip(`🎉 成功标记角：∠${pendingPoints[0]}${pendingPoints[1]}${pendingPoints[2]}`);
-                        equalAngIdx++;
-                        pendingPoints = [];
-                    }
-                } else {
-                    showAnnotTip("💡 请点击已有的角，或依次点击 3 个顶点");
-                }
-            }
-        }
-
-        function clearUserAnnotations() {
-            deactivateAnnotTool();
-            equalPairIdx = 0;
-            equalAngIdx = 0;
-            if (lesson && ggbApp) {
-                applyStep(curStepIdx);
-            }
-            showAnnotTip("🧹 已清空画板上的所有手动标记", 2000);
-        }
-
         const ggbParameters = {
             "id": "ggbApplet",
             "width": 880,
@@ -1180,7 +1359,7 @@
             "useBrowserForJS": false,
             "appletOnLoad": function (api) {
                 ggbApp = api;
-                initAnnotationListeners();
+                resizeDrawingCanvas();
                 if (typeof window.LESSON_DATA !== 'undefined' && window.LESSON_DATA) {
                     loadLessonData(window.LESSON_DATA);
                 } else {
@@ -1192,6 +1371,7 @@
         const applet = new GGBApplet(ggbParameters, '5.0');
         window.onload = function () {
             applet.inject('ggb-container');
+            initDrawingCanvas();
             setupUploadHandlers();
             checkServerStatus();
         };
@@ -1238,6 +1418,13 @@
         function loadQuestion(qIdx) {
             curQIdx = qIdx;
             curStepIdx = 0;
+            // 切换题目小问时清空自由手绘画笔
+            drawStrokes = [];
+            currentStroke = null;
+            if (drawCanvas && drawCtx) {
+                const rect = drawCanvas.getBoundingClientRect();
+                drawCtx.clearRect(0, 0, rect.width, rect.height);
+            }
             document.querySelectorAll('.q-btn').forEach((b, i) => b.classList.toggle('active', i === qIdx));
             applyStep(0);
             renderSolutionMarkdown();
@@ -1245,8 +1432,6 @@
 
         function applyStep(stepIdx) {
             if (!ggbApp || !lesson) return;
-            pendingSeg = null;
-            pendingPoints = [];
             hideAnnotTip();
             curStepIdx = stepIdx;
             const q = lesson.questions[curQIdx];

@@ -41,9 +41,11 @@
    - 后端：`server.py` 通过发现本地运行的 Antigravity Local Language Server RPC 端口，直接以 `StartCascade` 隔离方式发起多模态视觉推理，生成标准几何 JSON 数据并持久化到 `lesson.js` 与 `uploads/`。
 2. **启发式辅助线思维卡片（`💡 辅助线是怎么想到的？`）**：
    - 前端已支持自动识别并在行首渲染翡翠绿色的 `💡 辅助线思维引导` 胶囊，中间行渲染天蓝色 `① ② ③` 因果推导，末尾行渲染金色 `🎯 目标高亮`。
-3. **交互式几何标注工具栏（方案 A）**：
-   - 在 GeoGebra 画板右上角实现悬浮磨砂玻璃工具栏，包含 `[ |=| 标记等长边 ]`、`[ ⌒ 标记等角 ]`、`[ 🧹 清空标记 ]`。
-   - 监听 GeoGebra 对象的点击事件，用户点击两条线段即可自动添加数学双划线 `||` 刻度与亮色高亮，并伴有底部操作气泡提示。
+3. **自由手绘批注画板（电子白板）与一键清除所有标记**：
+   - 彻底移除原生繁琐的 GeoGebra 点选标记工具（`[ |=| 等长边 ]` 与 `[ ⌒ 等角 ]`），全面替换为在 GeoGebra 画板上方叠加的透明高性能 HTML5 Canvas 自由涂鸦层（`#drawingCanvas`，支持高分屏 DPR 自适应与贝塞尔平滑插值）；
+   - 工具栏移至画板左侧垂直居中悬浮（对齐红线手势习惯，不遮挡右侧几何图形与小问列表）：包含 `[ 👆 鼠标 ]`、`[ ✏️ 画笔 ]`（自由手绘圈角/画圆弧/划重点）、`[ 🖍️ 荧光笔 ]`（半透明区域高亮涂抹）；
+   - 提供 4 种教学高频颜色（荧光黄、翠绿、珊瑚红、湖水蓝）2x2 极简矩阵切换；
+   - 提供 `[ ↩️ 撤销 ]`（快捷键 Ctrl+Z / Cmd+Z）与 `[ 🧹 一键清除 ]`，一键彻底清空画板上的所有临时手绘笔迹。
 4. **局域网多设备共享**：
    - `server.py` 已升级为 `ThreadingHTTPServer(("0.0.0.0", 8765))`，自动扫描获取本地真实局域网 IP（自动过滤 198.18.x.x 代理虚拟网卡），前端 API 地址自动自适应 `window.location.origin`。
 5. **双模块默认折叠与「解题思路分析」功能**：
@@ -94,9 +96,14 @@
 
 ## 3. 关键代码资产 (Key Code Assets)
 
-- **核心业务与前端**：
+- **核心后端与服务架构（模块化解耦）**：
+  - `/Users/dean/Documents/math-tutor-workspace/server.py`：主服务入口与 Web API 路由分发（多线程 HTTP），处理 `/api/status` 与 `/api/solve`，托管前端静态资源。
+  - `/Users/dean/Documents/math-tutor-workspace/solver.py`：核心几何微课推演引擎，封装 Antigravity 本地 RPC 通信、会话沙箱生命周期、非阻塞轮询与数据持久化。
+  - `/Users/dean/Documents/math-tutor-workspace/config.py`：集中管理工作区路径、监听端口、模型枚举映射（默认 Gemini 3.8 Flash High）与轮询超时配置。
+  - `/Users/dean/Documents/math-tutor-workspace/prompts.py`：集中管理系统角色设定、JSON 格式规范与 GeoGebra 教学绘图铁律，输出组装好的高阶提示词。
+  - `/Users/dean/Documents/math-tutor-workspace/utils.py`：通用底层工具集（Antigravity 进程探测、局域网物理 IP 提取、四级容错 JSON 自愈提取管线）。
+- **前端与数据载体**：
   - `/Users/dean/Documents/math-tutor-workspace/viewer.html`：单页 Web App 主界面，包含 GeoGebra 交互画板容器、几何标注工具栏、字幕分步排版器、KaTeX 公式渲染、图片上传及状态控制器。
-  - `/Users/dean/Documents/math-tutor-workspace/server.py`：全自动本地服务后端（多线程 HTTP），承载 Antigravity RPC 进程探测、工作区隔离会话、多模态 Prompt 构造、单反斜杠防御解析及局域网服务分发。
   - `/Users/dean/Documents/math-tutor-workspace/lesson.js`：当前题目经过完整格式化、带有启发式辅助线思维与等长边标注的完整微课数据载体。
 - **系统行为与契约规则**：
   - `/Users/dean/Documents/math-tutor-workspace/.antigravity/AGENTS.md`：Antigravity 模型在当前工作区生成微课时遵循的最高准则与铁律（含 1:1 还原、启发式辅助线引导、按行排版与高亮规则）。
