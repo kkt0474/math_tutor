@@ -212,10 +212,14 @@ def extract_json_from_text(text: str) -> dict:
     2. 允许 strict=False 容忍字符串内控制字符；
     3. 全方位正则识别修复 LaTeX 单反斜杠公式（\\angle, \\perp, \\cong, \\sim, \\triangle 等）；
     4. 自动移除末尾多余逗号（trailing commas）；
-    5. 自动修复 GeoGebra 嵌套引号与中文符号；
-    6. 降级使用 ast.literal_eval 救砖恢复。
+    5. 自动修复句号误作逗号（如 "..."."）与对象提早闭合（如 },\n "steps":）；
+    6. 自动修复 GeoGebra 嵌套引号与中文符号；
+    7. 降级使用 ast.literal_eval 救砖恢复。
     """
-    # 0. 实时备份原始文本
+    # 0. 变量赋初始默认值
+    parse_error = None
+
+    # 实时备份原始文本
     try:
         raw_log = UPLOADS_DIR / "last_raw_model_reply.txt"
         raw_log.write_text(text, encoding="utf-8")
@@ -241,25 +245,30 @@ def extract_json_from_text(text: str) -> dict:
     # 阶段 1：尝试直接解析（宽松模式）
     try:
         return json.loads(text_clean, strict=False)
-    except Exception as e1:
-        print(f"[{time.strftime('%H:%M:%S')}] ⚠️ 基础 JSON 解析未通过 ({e1})，启动智能自愈管线...")
+    except Exception as err:
+        parse_error = err
+        print(f"[{time.strftime('%H:%M:%S')}] ⚠️ 基础 JSON 解析未通过 ({err})，启动智能自愈管线...")
 
-    # 阶段 2：全方位 LaTeX 单反斜杠自愈
+    # 阶段 2：全方位 LaTeX 单反斜杠自愈 + 标点自愈
+    # 修复句号结尾误写 (如 "..."." 或 "..."。\n)
+    fixed = re.sub(r'\"[.。]\s*([\r\n]+\s*\")', r'",\1', text_clean)
+    # 修复对象过早闭合误插大括号 (如 },\n "steps": [)
+    fixed = re.sub(r'\}\s*,\s*([\r\n]+\s*"(?:steps|solutionMarkdown|thoughtAnalysis|name|modelName|explanation|ggbCommands)"\s*:)', r',\1', fixed)
     # 在标准 JSON 中，只有 \" \\ \/ \b \f \n \r \t \uXXXX 是合法的转义序列。
-    # 几何模型生成的 LaTeX 公式（如 \angle, \perp, \cong, \triangle, \because 等）如果带有单斜杠必须全部转为 \\
-    fixed = re.sub(r'\\(?![\\"/bfnrt]|u[0-9a-fA-F]{4})', r'\\\\', text_clean)
+    # 几何模型生成的 LaTeX 公式如果带有单斜杠必须全部转为 \\（严格加负向后顾 (?<!\\)，防止将已合法的 \\angle 篡改成 \\\angle）
+    fixed = re.sub(r'(?<!\\)\\(?![\\"/bfnrt]|u[0-9a-fA-F]{4})', r'\\\\', fixed)
     # 移除数组与对象末尾的非法逗号 (trailing commas)
     fixed = re.sub(r',\s*([\]}])', r'\1', fixed)
 
     try:
         data = json.loads(fixed, strict=False)
-        print(f"[{time.strftime('%H:%M:%S')}] ✅ 自愈成功：阶段 2 (LaTeX 转义与尾部逗号修复) 成功解析 JSON！")
+        print(f"[{time.strftime('%H:%M:%S')}] ✅ 自愈成功：阶段 2 (LaTeX 转义、标点与尾部逗号修复) 成功解析 JSON！")
         return data
-    except Exception as e2:
-        print(f"[{time.strftime('%H:%M:%S')}] ⚠️ 阶段 2 未通过 ({e2})，尝试阶段 3 嵌套引号与特殊符号清洗...")
+    except Exception as err:
+        parse_error = err
+        print(f"[{time.strftime('%H:%M:%S')}] ⚠️ 阶段 2 未通过 ({err})，尝试阶段 3 嵌套引号与特殊符号清洗...")
 
     # 阶段 3：修复 GeoGebra 嵌套引号与字符串内单双引号混乱
-    # 例如 SetColor(seg, "#38BDF8") 内部未转义的双引号
     fixed2 = re.sub(r'SetColor\(([^,]+),\s*"([^"]+)"\)', r'SetColor(\1, \\"\2\\")', fixed)
     fixed2 = re.sub(r'SetColor\(([^,]+),\s*""([^"]+)""\)', r'SetColor(\1, \\"\2\\")', fixed2)
     # 移除对象键名缺失引号或中文全角冒号
@@ -269,8 +278,9 @@ def extract_json_from_text(text: str) -> dict:
         data = json.loads(fixed2, strict=False)
         print(f"[{time.strftime('%H:%M:%S')}] ✅ 自愈成功：阶段 3 (嵌套引号修复) 成功解析 JSON！")
         return data
-    except Exception as e3:
-        print(f"[{time.strftime('%H:%M:%S')}] ⚠️ 阶段 3 未通过 ({e3})，尝试阶段 4 Python AST 容错提取...")
+    except Exception as err:
+        parse_error = err
+        print(f"[{time.strftime('%H:%M:%S')}] ⚠️ 阶段 3 未通过 ({err})，尝试阶段 4 Python AST 容错提取...")
 
     # 阶段 4：Python AST 解析降级（可容忍大部分 JSON 标点微瑕疵）
     try:
@@ -283,12 +293,15 @@ def extract_json_from_text(text: str) -> dict:
         if isinstance(res, dict) and "questions" in res:
             print(f"[{time.strftime('%H:%M:%S')}] ✅ 自愈成功：阶段 4 (AST 结构解析) 成功拯救微课数据！")
             return res
-    except Exception:
-        pass
+    except Exception as err:
+        parse_error = err
 
     # 若所有救砖机制均无法恢复，抛出详细诊断信息
-    print(f"[{time.strftime('%H:%M:%S')}] ❌ 所有自愈机制均告竭，原始报错：{e1}")
-    raise e1
+    err_detail = str(parse_error) if parse_error is not None else "未知 JSON 解析错误"
+    print(f"[{time.strftime('%H:%M:%S')}] ❌ 所有自愈机制均告竭，原始报错：{err_detail}")
+    if parse_error is not None:
+        raise ValueError(f"微课 JSON 解析失败: {err_detail}") from parse_error
+    raise ValueError("微课 JSON 解析失败: 无法从模型回复中提取合法数据结构")
 
 
 def solve_problem_automatically(image_bytes: bytes, mime_type: str, extra_note: str, model_slug: str) -> dict:
@@ -299,21 +312,24 @@ def solve_problem_automatically(image_bytes: bytes, mime_type: str, extra_note: 
     if not server_info:
         raise RuntimeError("未检测到正在运行的 Antigravity 客户端进程，请确认 Antigravity 已打开。")
 
-    plan_model = MODEL_MAP.get(model_slug, "MODEL_PLACEHOLDER_M319")
+    plan_model = MODEL_MAP.get(model_slug, "MODEL_PLACEHOLDER_M318")
 
-    # 1. 创建隔离在当前 math-tutor-workspace 的临时会话
-    start_res = agy_rpc(
-        server_info,
-        "StartCascade",
-        {
-            "source": "CORTEX_TRAJECTORY_SOURCE_CASCADE_CLIENT",
-            "trajectoryType": "CORTEX_TRAJECTORY_TYPE_INTERACTIVE_CASCADE",
-            "workspaceUris": [f"file://{WORKSPACE_DIR}"],
-        },
-    )
-    cascade_id = start_res["cascadeId"]
-
+    cascade_id = None
     try:
+        # 1. 创建隔离在当前 math-tutor-workspace 的临时会话
+        start_res = agy_rpc(
+            server_info,
+            "StartCascade",
+            {
+                "source": "CORTEX_TRAJECTORY_SOURCE_CASCADE_CLIENT",
+                "trajectoryType": "CORTEX_TRAJECTORY_TYPE_INTERACTIVE_CASCADE",
+                "workspaceUris": [f"file://{WORKSPACE_DIR}"],
+            },
+        )
+        cascade_id = start_res.get("cascadeId")
+        if not cascade_id:
+            raise RuntimeError("创建 Antigravity 推演会话失败，未获取到 cascadeId。")
+
         b64_img = base64.b64encode(image_bytes).decode("utf-8")
         prompt = build_strict_json_prompt(extra_note)
 
@@ -365,7 +381,7 @@ def solve_problem_automatically(image_bytes: bytes, mime_type: str, extra_note: 
                     print(f"[{time.strftime('%H:%M:%S')}] ⚠️ 轮询暂未就绪 ({ep})，继续等待...", flush=True)
                 continue
 
-            steps = steps_res.get("steps", [])
+            steps = steps_res.get("steps", []) if steps_res else []
             for st in reversed(steps):
                 st_type = st.get("type", "")
                 if st_type in ("CORTEX_STEP_TYPE_PLANNER_RESPONSE", "PLANNER_RESPONSE"):
@@ -400,15 +416,16 @@ def solve_problem_automatically(image_bytes: bytes, mime_type: str, extra_note: 
         return {
             "lessonData": lesson_data,
             "model": model_slug,
-            "user": server_info["user"],
+            "user": server_info.get("user", "Pro User"),
             "elapsed": elapsed_seconds,
         }
     finally:
         # 5. 自动清理临时会话，保持用户的 Antigravity 聊天列表干净无污染
-        try:
-            agy_rpc(server_info, "DeleteCascadeTrajectory", {"cascadeId": cascade_id}, timeout=10)
-        except Exception:
-            pass
+        if cascade_id and server_info:
+            try:
+                agy_rpc(server_info, "DeleteCascadeTrajectory", {"cascadeId": cascade_id}, timeout=10)
+            except Exception:
+                pass
 
 
 class MathTutorHandler(SimpleHTTPRequestHandler):
@@ -444,12 +461,16 @@ class MathTutorHandler(SimpleHTTPRequestHandler):
 
     def do_POST(self):
         if self.path == "/api/solve":
-            length = int(self.headers.get("Content-Length", 0))
-            body = json.loads(self.rfile.read(length).decode("utf-8"))
+            try:
+                length = int(self.headers.get("Content-Length", 0))
+                body = json.loads(self.rfile.read(length).decode("utf-8"))
+            except Exception as e:
+                self._send_json({"ok": False, "error": f"请求体解析失败: {e}"}, status=400)
+                return
 
             image_data = body.get("imageBase64", "")
             extra_note = body.get("note", "")
-            model_slug = body.get("model", "gemini-3.8-flash-medium")
+            model_slug = body.get("model", "gemini-3.8-flash-high")
 
             if not image_data:
                 self._send_json({"ok": False, "error": "请先上传或粘贴题目图片"}, status=400)
@@ -475,13 +496,14 @@ class MathTutorHandler(SimpleHTTPRequestHandler):
                 return
             saved_path.write_bytes(raw_bytes)
 
+            result = None
             try:
                 result = solve_problem_automatically(raw_bytes, mime_type, extra_note, model_slug)
                 self._send_json({
                     "ok": True,
                     "mode": "auto",
-                    "model": result["model"],
-                    "user": result["user"],
+                    "model": result.get("model", model_slug),
+                    "user": result.get("user", "Pro User"),
                     "elapsed": result.get("elapsed", 0),
                     "lessonData": result["lessonData"],
                 })

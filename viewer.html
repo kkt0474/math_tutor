@@ -1370,7 +1370,7 @@
                 // 几何后处理引擎 2：自动扫描题干与第 1 步已知条件中的相等线段（如 DE=EF, BC=CD），在图形上自动标出等长刻度线
                 const step0Text = (q.title || '') + '\n' + ((q.steps[0] && q.steps[0].explanation) || '');
                 const eqRegex = /(?<![0-9\\A-Za-z])([A-Z]{2})\s*=\s*([A-Z]{2})(?:\s*=\s*([A-Z]{2}))?(?![0-9A-Za-z])/g;
-                let eqMatch;
+                let eqMatch = null;
                 let groupIdx = 0;
                 const decoratedGroups = [];
                 while ((eqMatch = eqRegex.exec(step0Text)) !== null) {
