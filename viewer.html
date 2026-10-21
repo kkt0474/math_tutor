@@ -206,10 +206,10 @@
             height: 100%;
         }
 
-        /* 自由手绘批注工具栏（靠左侧垂直悬浮，对齐红线位置） */
+        /* 自由手绘批注工具栏（靠左侧垂直悬浮，紧凑窄版） */
         .annot-bar {
             position: absolute;
-            left: 12px;
+            left: 6px;
             top: 50%;
             transform: translateY(-50%);
             z-index: 25;
@@ -217,11 +217,11 @@
             flex-direction: column;
             align-items: center;
             gap: 6px;
-            background: rgba(15, 23, 42, 0.90);
+            background: rgba(15, 23, 42, 0.92);
             backdrop-filter: blur(10px);
             border: 1px solid var(--panel-border);
-            border-radius: 10px;
-            padding: 8px 6px;
+            border-radius: 8px;
+            padding: 6px 5px;
             box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
         }
 
@@ -229,6 +229,7 @@
             display: flex;
             flex-direction: column;
             gap: 5px;
+            align-items: center;
             width: 100%;
         }
 
@@ -243,13 +244,14 @@
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 6px;
-            padding: 2px 2px;
+            padding: 2px 0;
             justify-items: center;
+            width: 34px;
         }
 
         .color-dot {
-            width: 17px;
-            height: 17px;
+            width: 14px;
+            height: 14px;
             border-radius: 50%;
             cursor: pointer;
             border: 2px solid transparent;
@@ -271,19 +273,17 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 5px;
             background: rgba(30, 41, 59, 0.85);
             border: 1px solid rgba(148, 163, 184, 0.2);
             color: #cbd5e1;
-            padding: 6px 8px;
+            width: 34px;
+            height: 34px;
+            padding: 0;
             border-radius: 6px;
-            font-size: 12px;
-            font-weight: 600;
+            font-size: 15px;
             cursor: pointer;
             transition: all 0.15s ease;
             user-select: none;
-            white-space: nowrap;
-            width: 100%;
             box-sizing: border-box;
         }
 
@@ -291,6 +291,7 @@
             background: rgba(51, 65, 85, 0.95);
             color: #fff;
             border-color: var(--accent-light);
+            transform: scale(1.05);
         }
 
         .annot-btn.active {
@@ -304,7 +305,6 @@
             background: rgba(225, 29, 72, 0.18);
             border-color: rgba(244, 63, 94, 0.4);
             color: #fb7185;
-            font-weight: 700;
         }
 
         .annot-btn.annot-clear-all:hover {
@@ -332,7 +332,11 @@
         }
 
         .annot-icon {
-            font-size: 13px;
+            font-size: 16px;
+            line-height: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
         }
 
         /* 画板浮动操作提示 */
@@ -928,20 +932,16 @@
 
             <!-- GeoGebra 交互画板容器 -->
             <div id="ggb-wrapper">
-                <!-- 自由手绘涂鸦工具栏（左侧垂直悬浮） -->
+                <!-- 自由手绘涂鸦工具栏（左侧垂直悬浮，紧凑窄版） -->
                 <div class="annot-bar" id="annotBar">
                     <div class="annot-group">
                         <button class="annot-btn active" id="btnToolMouse" onclick="setDrawingTool('mouse')"
                             title="鼠标指针模式：可自由拖动与缩放几何图形">
-                            <span class="annot-icon">👆</span> 鼠标
+                            <span class="annot-icon">👆</span>
                         </button>
                         <button class="annot-btn" id="btnToolPen" onclick="setDrawingTool('pen')"
                             title="手绘画笔：按住鼠标直接在图形上画角、画圆弧或圈划重点">
-                            <span class="annot-icon">✏️</span> 画笔
-                        </button>
-                        <button class="annot-btn" id="btnToolHighlighter" onclick="setDrawingTool('highlighter')"
-                            title="荧光笔：半透明高亮涂抹">
-                            <span class="annot-icon">🖍️</span> 荧光笔
+                            <span class="annot-icon">✏️</span>
                         </button>
                     </div>
 
@@ -959,11 +959,11 @@
                     <div class="annot-group">
                         <button class="annot-btn" id="btnUndoDraw" onclick="undoDrawing()"
                             title="撤销上一笔手绘批注 (快捷键 Ctrl+Z / Cmd+Z)">
-                            <span class="annot-icon">↩️</span> 撤销
+                            <span class="annot-icon">↩️</span>
                         </button>
                         <button class="annot-btn annot-clear-all" id="btnClearAll" onclick="clearAllMarkings()"
                             title="一键清除当前画板上的所有标记">
-                            <span class="annot-icon">🧹</span> 一键清除
+                            <span class="annot-icon">🧹</span>
                         </button>
                     </div>
                 </div>
@@ -1277,12 +1277,9 @@
 
             document.getElementById('btnToolMouse')?.classList.toggle('active', tool === 'mouse');
             document.getElementById('btnToolPen')?.classList.toggle('active', tool === 'pen');
-            document.getElementById('btnToolHighlighter')?.classList.toggle('active', tool === 'highlighter');
 
             if (tool === 'pen') {
-                showAnnotTip("✏️ 手绘画笔已激活：按住鼠标直接在图形上画角、画圆弧或写批注", 2500);
-            } else if (tool === 'highlighter') {
-                showAnnotTip("🖍️ 荧光笔已激活：按住鼠标直接涂抹重点区域", 2500);
+                showAnnotTip("✏️ 手绘画笔已激活：按住鼠标直接在图形上画角、画圆弧或圈划重点", 2500);
             } else {
                 showAnnotTip("👆 鼠标模式：可正常拖拽与缩放几何图形", 1500);
             }

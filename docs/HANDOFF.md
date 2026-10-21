@@ -41,11 +41,14 @@
    - 后端：`server.py` 通过发现本地运行的 Antigravity Local Language Server RPC 端口，直接以 `StartCascade` 隔离方式发起多模态视觉推理，生成标准几何 JSON 数据并持久化到 `lesson.js` 与 `uploads/`。
 2. **启发式辅助线思维卡片（`💡 辅助线是怎么想到的？`）**：
    - 前端已支持自动识别并在行首渲染翡翠绿色的 `💡 辅助线思维引导` 胶囊，中间行渲染天蓝色 `① ② ③` 因果推导，末尾行渲染金色 `🎯 目标高亮`。
-3. **自由手绘批注画板（电子白板）与一键清除所有标记**：
-   - 彻底移除原生繁琐的 GeoGebra 点选标记工具（`[ |=| 等长边 ]` 与 `[ ⌒ 等角 ]`），全面替换为在 GeoGebra 画板上方叠加的透明高性能 HTML5 Canvas 自由涂鸦层（`#drawingCanvas`，支持高分屏 DPR 自适应与贝塞尔平滑插值）；
-   - 工具栏移至画板左侧垂直居中悬浮（对齐红线手势习惯，不遮挡右侧几何图形与小问列表）：包含 `[ 👆 鼠标 ]`、`[ ✏️ 画笔 ]`（自由手绘圈角/画圆弧/划重点）、`[ 🖍️ 荧光笔 ]`（半透明区域高亮涂抹）；
-   - 提供 4 种教学高频颜色（荧光黄、翠绿、珊瑚红、湖水蓝）2x2 极简矩阵切换；
-   - 提供 `[ ↩️ 撤销 ]`（快捷键 Ctrl+Z / Cmd+Z）与 `[ 🧹 一键清除 ]`，一键彻底清空画板上的所有临时手绘笔迹。
+3. **自由手绘批注画板（电子白板）与极窄纯图标工具栏**：
+   - 彻底移除原生繁琐的 GeoGebra 点选标记工具，全面替换为在 GeoGebra 画板上方叠加的透明高性能 HTML5 Canvas 自由涂鸦层（`#drawingCanvas`，支持高分屏 DPR 自适应与贝塞尔平滑插值）；
+   - 工具栏移至画板左侧垂直居中极度靠左悬浮（`left: 6px;`，对齐手势习惯，不遮挡右侧几何图形与小问列表）；
+   - **极窄纯图标设计（Icon-Only）**：移除所有文字说明与冗余的荧光笔，按钮优化为 `34px × 34px`，总宽度压缩至约 46px（缩窄逾 50%）；
+   - 包含工具：`👆` 鼠标交互、`✏️` 自由手绘画笔、4 色极简教学调色盘（荧光黄、翠绿、珊瑚红、湖水蓝）、`↩️` 撤销上一笔（快捷键 Ctrl+Z / Cmd+Z）与 `🧹` 一键清除所有标记。
+   - 保留原生 HTML 悬停 Tooltip 与操作状态提示胶囊，保持极简与自解释性。
+4. **全局 Save / Resume 上下文归档恢复系统**：
+   - 将工作区沉淀的 `/save` 与 `/resume` 工作流正式升级为全局技能（`~/.gemini/config/skills/`），增加新工程根目录 `docs/` 自动创建与交接文件不存在时的容错处理，本机所有项目均可通用。
 4. **局域网多设备共享**：
    - `server.py` 已升级为 `ThreadingHTTPServer(("0.0.0.0", 8765))`，自动扫描获取本地真实局域网 IP（自动过滤 198.18.x.x 代理虚拟网卡），前端 API 地址自动自适应 `window.location.origin`。
 5. **双模块默认折叠与「解题思路分析」功能**：
@@ -107,7 +110,7 @@
   - `/Users/dean/Documents/math-tutor-workspace/lesson.js`：当前题目经过完整格式化、带有启发式辅助线思维与等长边标注的完整微课数据载体。
 - **系统行为与契约规则**：
   - `/Users/dean/Documents/math-tutor-workspace/.antigravity/AGENTS.md`：Antigravity 模型在当前工作区生成微课时遵循的最高准则与铁律（含 1:1 还原、启发式辅助线引导、按行排版与高亮规则）。
-  - `/Users/dean/Documents/math-tutor-workspace/.antigravity/skills/save/SKILL.md`：`/save` 命令规范与执行指南。
-  - `/Users/dean/Documents/math-tutor-workspace/.antigravity/skills/resume/SKILL.md`：`/resume` 命令规范与执行指南。
+  - `/Users/dean/Documents/math-tutor-workspace/.agent/skills/save/SKILL.md` 与 `~/.gemini/config/skills/save/SKILL.md`：`/save` 命令规范与执行指南（工作区与全局双副本）。
+  - `/Users/dean/Documents/math-tutor-workspace/.agent/skills/resume/SKILL.md` 与 `~/.gemini/config/skills/resume/SKILL.md`：`/resume` 命令规范与执行指南（工作区与全局双副本）。
 - **交接与状态文件**：
   - `/Users/dean/Documents/math-tutor-workspace/docs/HANDOFF.md`：跨会话上下文交接基准文档。
