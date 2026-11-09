@@ -58,8 +58,8 @@ flowchart TD
         Transcriber -->|提取无歧义几何拓扑描述| Reasoner["Reasoner 推理大模型插件"]
         
         Manager -->|阶段 3: 深度证明与绘图设计| Reasoner
-        Reasoner -->|选项 A: DeepSeek-V4-Pro / Reasoner (流式思维链)| SolveData["生成微课 JSON 数据"]
-        Reasoner -->|选项 B: Gemini 3.8 Flash / 4 Argon| SolveData
+        Reasoner -->|"选项 A: DeepSeek-V4-Pro / Reasoner - 流式思维链"| SolveData["生成微课 JSON 数据"]
+        Reasoner -->|"选项 B: Gemini 3.8 Flash / 4 Argon"| SolveData
     end
 
     subgraph Frontend ["前端教学主舞台 (viewer.html)"]
