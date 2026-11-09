@@ -2,3 +2,9 @@
 __pycache__/
 *.pyc
 uploads/problem_*
+uploads/clean_*
+uploads/transcription_*
+uploads/cache_*
+uploads/debug.log
+.env
+

@@ -4,113 +4,109 @@
 
 - **业务背景与目标**：
   - 构建一个单页几何微课 Web App，面向初中生数学几何培优学习。
-  - 用户上传或粘贴几何原题图片（支持 Cmd+V 粘贴、拖拽、文件选择），系统全自动调用本机 Antigravity 后台引擎（复用用户的 Gemini 3.8 Flash / Gemini 4 Argon 等 Pro 高阶模型），全自动识别题目、1:1 还原原图、分步推导、动态生成 GeoGebra 交互式板书指令与中考规范书写过程，前台自动加载显示。
-- **输入输出与数据契约**：
-  - **输入**：题目图片（Base64 PNG/JPEG）、可选模型选择（默认 Gemini 3.8 Flash High）、可选补充讲题要求（`extra_note`）。
-  - **输出数据格式**：严格格式化的 JSON 对象（定义在 `window.LESSON_DATA`），包含：
-    - `viewConfig`: `{ hasAxes: false, bounds: { xmin, xmax, ymin, ymax } }`
-    - `questions`: 数组，覆盖题目所有小问。每一问包含：
-      - `title`: 小问题目与求证目标
-      - `thoughtAnalysis`: 符合人类思维习惯的解题思路分析（题眼信号识别 + 人类破题思维路线，不堆砌详细算数）
-      - `steps`: 3~4 个分步板书。每个步骤含 `name`、`modelName`、`explanation`、`ggbCommands`（GeoGebra 板书指令数组）
-      - `solutionMarkdown`: 纯粹规范中考书写全文（支持 LaTeX 公式）
-- **核心逻辑与教学规范约束**：
-  1. **视觉方位 1:1 对齐原图**：原图无坐标系时必须以原图水平/铅直线为基准建系，严禁随意旋转或扭曲图形几何拓扑。
-  2. **第 1 步纯粹原图呈现**：第 1 步（`steps[0]`）只画题目已知几何点线（蓝色实线），严禁在第 1 步出现任何辅助线。
-  3. **辅助线动态生长**：第 2 步起通过亮黄色虚线（`SetLineStyle(aux, 2)`, `SetColor(aux, "#FACC15")`）动态生长辅助线。
-  4. **启发式辅助线思维引导铁律**：凡是有辅助线的步骤，`explanation` 第 1 行必须以 `【💡 辅助线是怎么想到的？】` 开头，讲清“图中现有残缺特征 $\rightarrow$ 为什么需要补这条线 $\rightarrow$ 如何作辅助线”，严禁直接生硬下达作图指令。
-  5. **经典解题套路精准识别**：
-     - 若出现典型残缺模型特征（如直线上已有两直角且伴随等腰直角斜边相等，即“一线两垂直”），**必须明确点出【一线三垂直（K字型全等）】**，讲清“知二补一”；其他如 8字型（沙漏）全等、倍长中线、截长补短、手拉手、将军饮马等真模型，均需讲明触发信号并明确点出。
-     - 若完全无需画辅助线、顺着已知条件自然推导（如第 1 问直接证 SAS 全等），则严禁生搬硬套复杂模型名。
-  6. **按行分步排版**：每一行只写一个有直接关联的因果推导（“因为……，所以我们得到……。”），下一个子步骤必须用 `\n` 换行另起一行，以 `①`、`②`、`③` 规整展示。
-  7. **本步核心目标高亮**：每个步骤 `explanation` 最后一行必须用 `==...==` 包裹最终达成的核心目标，前端自动渲染为带有 `🎯` 的金色荧光笔高亮胶囊。
-  8. **严格工作区沙箱隔离**：独立创建 Antigravity 临时会话，所有操作与数据只限定在 `math-tutor-workspace` 内，请求完成后自动清理会话，严禁污染其他工作区。
-  9. **局域网全网卡共享**：后端绑定 `0.0.0.0:8765` 并采用多线程并发，同一 Wi-Fi 内其他设备（手机、iPad、PC）可直接通过本机 IP 访问使用。
-  10. **画板交互标注功能（方案 A）**：画板内置轻量交互工具栏，支持鼠标点击线段一键打上初中数学规范的等长双划线刻度（`||`）、高亮等角与一键清空标记。
-  11. **等角分组着色**：前端按角的数值把相等的角分组，同组同色同弧半径，不同组颜色与弧半径不同（`applyStep` 内 `ANGLE_GROUP_STYLES`），着色后必须再次隐藏角度标签（否则 GeoGebra 会重新显示 `angB = 60°`）。
-  12. **自选坐标禁止“巧合特殊位置”**：未给出的角/线段不得恰好成为 90° 或相等（已写入 `AGENTS.md` 第 0 条）。
-  13. **用户补充要求最高优先级**：`server.py` 把 `extra_note` 放在提示词最前面，并要求所有字段遵守。
+  - 用户上传或粘贴几何原题图片（支持 `Cmd/Ctrl + V` 粘贴、拖拽、文件选择），全自动执行多阶段多模型流水线处理，生成 1:1 还原原图、分步推导、动态生成 GeoGebra 交互式板书指令与中考规范书写过程，前台自动加载显示。
+- **三阶段流水线架构（TextIn ➔ Gemini ➔ DeepSeek / Gemini）**：
+  1. **阶段 1：TextIn / 去笔迹工具（底图物理清洗员）**：
+     - 官方文档：[TextIn 智能手写涂鸦擦除 (text_auto_removal)](https://www.textin.com/document/text_auto_removal)
+     - REST API 端点：`https://api.textin.com/ai/service/v1/handwritten_erase`
+     - 职责：抹除试卷上的手写字、铅笔草稿、红笔批改与学生自画错误辅助线，输出黑白清晰印刷底图。
+     - 严禁：不提取语义，不解析空间逻辑。
+  2. **阶段 2：Gemini 本地 Antigravity RPC（空间视觉与题设转录员）**：
+     - 职责：提取题干中所有文字与公式（转为标准 LaTeX），精准识别图中点线空间拓扑（延长线、相交、共线、垂直标、等长等角标），输出毫无歧义的纯文本几何命题描述。
+     - 严禁：**严禁解题**，严禁输出任何证明步骤或辅助线构造。
+  3. **阶段 3：DeepSeek / Gemini 推理架构师（深度证明与绘图架构师）**：
+     - 支持模型：`deepseek-v4-pro`（旗舰深度推理）、`deepseek-flash`（极速推演）以及本地免费的 `gemini_rpc`；
+     - 职责：接收阶段 2 转录的纯文本命题，开启深度思维链（Thinking），识别中考模型（旋转、隐圆、一线三垂直、费马点等），构造辅助线并输出无跳步证明，生成 GeoGebra 指令及前端契约 JSON。
+     - 严禁：不直接接收原始图片，不参与图像预处理。
+- **核心交互特色功能**：
+  1. **全幅沉浸推演看板 & 任务终止**：推演看板完整覆盖左侧绘图区，实时流淌通俗进度日志并提供中止推演按钮（AbortController + `/api/cancel`）。
+  2. **几何双关金句轮播与 AI 专属定制寄语**：推演看板底部展示数学几何双关趣味金句（墨墨背单词气泡风格），并在模型推演完成时自动展示基于题目模型特征的 AI 定制专属寄语。
+  3. **单文件独立微课课件导出**：点击右对齐的“保存微课”按钮，弹窗支持自定义文件名与选择保存路径（跨平台支持 Mac/Windows），一键导出纯单文件 HTML（双击即开，零依赖）。
+  4. **透明手写电子白板**：Canvas 批注涂鸦层，支持多色画笔、荧光笔、撤销与清空。
+- **架构设计要求与约束**：
+  1. **插件式配置模式（Strategy / Registry 模式）**：
+     - `plugins/base.py` 抽象出 `BaseCleaner`, `BaseTranscriber`, `BaseReasoner`；
+     - `plugins/registry.py` 支持类路径反射加载与装饰器注册。
+  2. **统一配置与凭据隔离 (`.env` + `config.json`)**：
+     - `.env` 隔离存放敏感密钥，`config.json` 集中管理提供商与超参数；
+     - 服务启动时强制自检凭据，缺失时在终端友好报错拦截。
+  3. **中考教学与绘图铁律（单一信任源：`.antigravity/AGENTS.md`）**：
+     - 视觉方位 1:1 对齐原图；
+     - 第 1 步纯粹原图呈现（蓝色实线）；
+     - 第 2 步起辅助线动态生长（亮黄虚线），首行必须以 `【💡 辅助线是怎么想到的？】` 开头并精准点出模型（如【一线三垂直（K字全等）】）；
+     - 分步因果分行排版，末行必须使用 `==...==` 高亮核心结论，数学符号包裹 `$...$`。
 
 ---
 
 ## 2. 当前进度与已踩的坑 (Progress & Lessons Learned)
 
-### 已实现并验证的功能
-1. **全自动端到端单页 Web App**：
-   - 前端：`viewer.html` 集成 GeoGebra Web 引擎与 KaTeX 公式渲染器，支持拖拽、点击、Cmd+V 粘贴图片，一键提交并在画板中央呈现居中 Loading 状态，生成后自动无缝展示动态板书。
-   - 后端：`server.py` 通过发现本地运行的 Antigravity Local Language Server RPC 端口，直接以 `StartCascade` 隔离方式发起多模态视觉推理，生成标准几何 JSON 数据并持久化到 `lesson.js` 与 `uploads/`。
-2. **启发式辅助线思维卡片（`💡 辅助线是怎么想到的？`）**：
-   - 前端已支持自动识别并在行首渲染翡翠绿色的 `💡 辅助线思维引导` 胶囊，中间行渲染天蓝色 `① ② ③` 因果推导，末尾行渲染金色 `🎯 目标高亮`。
-3. **自由手绘批注画板（电子白板）与极窄纯图标工具栏**：
-   - 彻底移除原生繁琐的 GeoGebra 点选标记工具，全面替换为在 GeoGebra 画板上方叠加的透明高性能 HTML5 Canvas 自由涂鸦层（`#drawingCanvas`，支持高分屏 DPR 自适应与贝塞尔平滑插值）；
-   - 工具栏移至画板左侧垂直居中极度靠左悬浮（`left: 6px;`，对齐手势习惯，不遮挡右侧几何图形与小问列表）；
-   - **极窄纯图标设计（Icon-Only）**：移除所有文字说明与冗余的荧光笔，按钮优化为 `34px × 34px`，总宽度压缩至约 46px（缩窄逾 50%）；
-   - 包含工具：`👆` 鼠标交互、`✏️` 自由手绘画笔、4 色极简教学调色盘（荧光黄、翠绿、珊瑚红、湖水蓝）、`↩️` 撤销上一笔（快捷键 Ctrl+Z / Cmd+Z）与 `🧹` 一键清除所有标记。
-   - 保留原生 HTML 悬停 Tooltip 与操作状态提示胶囊，保持极简与自解释性。
-4. **全局 Save / Resume 上下文归档恢复系统**：
-   - 将工作区沉淀的 `/save` 与 `/resume` 工作流正式升级为全局技能（`~/.gemini/config/skills/`），增加新工程根目录 `docs/` 自动创建与交接文件不存在时的容错处理，本机所有项目均可通用。
-4. **局域网多设备共享**：
-   - `server.py` 已升级为 `ThreadingHTTPServer(("0.0.0.0", 8765))`，自动扫描获取本地真实局域网 IP（自动过滤 198.18.x.x 代理虚拟网卡），前端 API 地址自动自适应 `window.location.origin`。
-5. **双模块默认折叠与「解题思路分析」功能**：
-   - 页面左下侧「🧭 解题思路分析」与「📝 中考满分规范解答」默认均保持折叠状态，点击标题栏即可同步平滑展开/收起，有效精简页面垂直高度；
-   - 契约新增 `thoughtAnalysis` 字段，严格聚焦“题眼信号识别（破题开关）”与“人类破题思维路线（逆向目标+顺向搭桥）”，避免跳跃式推导，不重复堆砌详细算数。
+### 已实现并验证的功能与重构成果
+1. **多模型插件流水线架构完全落成并投入实战**：
+   - `plugins/cleaners/textin_cleaner.py`：TextIn 手写涂鸦擦除 REST 插件；
+   - `plugins/transcribers/gemini_rpc_transcriber.py`：Gemini 题设与拓扑转录插件；
+   - `plugins/reasoners/deepseek_reasoner.py`：DeepSeek SSE 流式深度推理与绘图插件；
+   - `plugins/reasoners/gemini_rpc_reasoner.py`：Gemini RPC 本地免费推演插件；
+   - `plugins/pipeline.py`：三阶段流水线编排器（含指纹缓存与分阶段耗时统计）。
+2. **全屏沉浸推演看板与金句轮播系统**：
+   - 解决了原小窗口过小遮挡问题，以全幅遮罩覆盖左侧计算区；
+   - 实现了数学几何双关趣味金句轮播与 AI 个性化定制寄语（`MATH_GEOMETRY_QUOTES`）。
+3. **“保存微课”按钮布局与离线单文件导出**：
+   - 按钮移至与右侧“上传几何题目图片”卡片右对齐；
+   - 支持跨平台原生目录选择与本地单文件保存。
+4. **全项目代码深度体检与健康度重构**：
+   - **死变量与冗余清理**：移除了 `config.py` 中的 `MAX_POLL_TIMEOUT_SECONDS`、`POLL_INTERVAL_SECONDS`、`ENV_VARS` 及废弃的 `claude` 模型；移除了 `solver.py` 中未使用的 `agy_rpc` 导入；移除了 `pipeline.py` 中的单模型旧缓存分支；
+   - **Prompt Token 瘦身**：统一将 `.antigravity/AGENTS.md` 作为单一信任源，移除了 `prompts.py` 中数千字重复注入的旧规则，单次推演节省约 1000 个上下文 Token；修复了 `note_content` 重复注入与编号跳跃问题；
+   - **底层网络通信复用**：将 `create_ssl_context` 和 `build_http_opener` 抽象收拢至 `utils.py`，供 `textin_cleaner` 与 `deepseek_reasoner` 共享；
+   - **`viewer.html` 单文件内部模块化（方案 A）**：维持单个 HTML 文件的便携性与零依赖离线导出能力，将脚本按 7 大子系统清晰模块化归类并解耦金句轮播与执行轮询逻辑；
+   - **文档与 README 同步更新**：精简了核心亮点说明，校准了启动命令（`python3 server.py`）并更新了文件架构说明。
 
-6. **近期新增并验证**：非阻塞轮询（`blocking: False` + 2 秒轮询，上限 900 秒）、四级 JSON 自愈解析、完成后显示计算耗时、标题/Tab 的 KaTeX 渲染、直角吸附（阈值 `1e-13`）、高亮结论裸 LaTeX 自动补 `$`。以上修复均只做过语法检查（`py_compile` / `node -c`），**尚待用户在浏览器端确认**：垂足 M 是否显示方框、黄色结论是否正常渲染公式。
-
-### 已否决方案与避坑经验 (Lessons Learned)
-0. **“生成失败：timed out”不一定是网络问题**：页面会继续显示旧的 `lesson.js` 内容，容易误判为新结果（曾误以为提示词没生效）；以右下角状态框为准。`server.py` 里还曾硬编码 `timeout=240`，覆盖了默认值。
-1. **严禁一刀切完全禁用套路名**：
-   - 之前因禁止模型“生搬硬套解题套路”，导致模型过度纠偏，在遇到真正需要“一线三垂直/K字全等”时也变成了生硬的指令式作图。必须明确划分**“何时必讲模型信号（知二补一作辅助线）”**与**“何时不强行套模型（无辅助线常规顺推）”**的边界。
-2. **严禁依赖纯客户端直接直连公网 Gemini API**：
-   - Gemini API 免额度仅限较低端模型，且无法直接使用用户的 Antigravity Pro 会员权益；走本地 RPC 通道（`127.0.0.1` RPC）是唯一既免 API Key 又能 100% 使用 Gemini 3.8 Flash / 4 Argon 等顶级模型的正确路线。
-3. **严禁直接让前端调用写死的 `http://127.0.0.1:8765`**：
-   - 写死 127.0.0.1 会导致局域网其他设备访问时请求失败，必须使用 `window.location.protocol.startsWith('http') ? window.location.origin : 'http://127.0.0.1:8765'`。
-4. **防范 JSON 中单反斜杠转义控制字符破坏**：
-   - 模型在 JSON 字符串中有时会把 LaTeX 写作单反斜杠 `\triangle`, `\text`, `\because`, `\frac`，这会被 `json.loads` 错误转义成 Tab、Backspace、FormFeed 等 ASCII 控制字符。已在 `server.py` 和 `viewer.html` 中加入了双重前置正规化修复。
-5. **GeoGebra 角度度数文字重叠**：
-   - GeoGebra 生成 `Angle(...)` 时默认会显示角度名称和具体度数，多角重叠时极其凌乱。已在前端注入技术兜底：自动遍历画板对象执行 `ggbApp.setLabelVisible(objName, false)`，仅保留直角方框与圆弧，隐藏文字度数。
-6. **防范角命名同义反复与等号自指废话（如 $\angle B = \angle ABC$）**：
-   - 模型在总结高亮结论时容易将单字母代号与三字母全称划等号。已在 `.antigravity/AGENTS.md` 与 `server.py` 的提示词中确立铁律：严禁单字母与三字母角自身划等号，除题干要求外统一使用三字母标准记法，等号两侧必须具备几何定理转化依据。
-7. **思路分析卡片章节标题误判与括号吞噬防御**：
-   - 前端解析 `thoughtAnalysis` 时严禁简单用 `line.includes('破局开关')` 作为大章节分割条件（因条目内部必然会出现“【破局开关】”标签），必须严格以正则 `^[#*•\-\s]*【?[💡\s]*题眼信号` 锚定行首标题；同时替换步骤标题时完整保留原文本中的括号内容，杜绝出现空括号 `()` 或文字丢失。
-8. **GeoGebra 优角/反角（>180°吃豆人）与斜线垂足直角方框（∟）丢失的底层根治引擎**：
-   - **为什么之前会出现反角修复失效 & 斜线垂足 M 变成圆弧而非直角方框 `∟`**：
-     1. 中文环境下 `ggbApp.getCommandString(objName)` 可能返回本地化指令名（如 `角[...]`），导致正则匹配 `Angle(...)` 失败；为此改为在 `applyStep` 执行 `step.ggbCommands` 时**直接源头捕获 `Angle(P1, V, P2)` 三顶点映射表 `angleDefs`**，彻底摆脱对 GeoGebra 内部命令字符串的依赖。
-     2. 利用**二维向量叉积（$\vec{v}_1 \times \vec{v}_2 = v_{1x}v_{2y} - v_{1y}v_{2x}$）**纯数学判定方向：只要 `cross < 0`（或弧度 $> \pi$），立即在前端执行 `Angle(P2, V, P1)` 翻转并注入 `<allowReflexAngle val="false"/>`，100% 根治 $>180^\circ$ 优角问题。
-     3. **斜线垂足直角退化为圆弧的真凶**：当垂线落在 $60^\circ$ 等斜线上时，AI 导出的 3 位小数坐标（如 `M = (4.041, 7)`）会使 $\angle AMC \approx 90.00367^\circ$，而 GeoGebra 要求误差 $< 10^{-8}$ 才会绘制直角方框 `∟`！前端新增**正交投影自动吸附算法**：凡检测到角度在 $[88.0^\circ, 92.0^\circ]$ 区间内，自动通过向量内积将垂足坐标正交投影到精确的 $90.000000000000^\circ$ 位置并注入 `<emphasizeRightAngle val="true"/>`，实现所有斜线垂足 100% 渲染标准直角方框 `∟`。
-9. **已知条件相等线段与相等角的全自动标出（Prompt 规范 + 前端智能扫描双保险）**：
-   - 在 `.antigravity/AGENTS.md` 与 `server.py` 中确立刚性规范：从 `steps[0]` 起，所有已知相等线段必须用 `SetDecoration(seg, 1/2)` 标出刻度线（`|` / `||`），所有已知相等角必须用同色 `Angle` 标出；
-   - 在 `viewer.html` 前端 `applyStep` 中内置**已知等长线段智能扫描器**：自动提取小问题干与首步说明中（`求证`/`求` 之前）的已知线段相等式（如 `DE = EF`、`BC = CD`），若画板仅有 `Polygon` 未单独建边则自动补建 `Segment`，并自动调用 `SetDecoration` 挂载等长刻度符号。
-10. **Antigravity RPC 长时间推演超时破除（非阻塞轮询架构）**：
-    - **真凶排查**：当题目包含 3 个大问且有强负向约束（如“禁止使用三角函数”）时，高阶模型深度思考耗时可达 4~6 分钟。若在 `SendUserCascadeMessage` 中使用 `blocking: True`，即使将 Python 超时改大，底层语言服务网关仍会在约 300 秒（5分钟）强制切断单 HTTP 请求导致 `timed out`；且原代码第 278 行硬编码了 `timeout=240`；
-    - **根治**：在 `server.py` 中将发送改造为 `blocking: False`（非阻塞，毫秒级返回），随后以 2 秒间隔轻量轮询 `GetCascadeTrajectorySteps`（总超时上限 900 秒/15分钟），彻底摆脱底层网关 300 秒连接截断限制；前端同步增加动态秒级耗时计数器。
-11. **模型长 JSON 解析自愈与等待时长体验优化**：
-    - **真凶排查**：改造非阻塞轮询后，模型耗时 7~8 分钟完整输出了 21,904 字符的微课数据（证明轮询连接已打通，不再被 240s/300s 掐断）。但在最后一步 Python `json.loads` 时报错 `Expecting ',' delimiter: line 164`。原因是大模型在长达两万字符的 LaTeX 公式（如 `\angle`, `\perp` 等）与 GeoGebra 指令（如嵌套引号 `SetColor(seg, "#38BDF8")`）中存在单反斜杠与未转义引号；
-    - **根治**：在 `server.py` 的 `extract_json_from_text` 中构建四级自愈管线（自动备份 `uploads/last_raw_model_reply.txt`、全量 LaTeX 单反斜杠转义、尾部多余逗号清洗、GeoGebra 引号清洗、AST 结构降级解析），100% 救回轻微语法瑕疵的 JSON。
-12. **页面标题/标签 KaTeX 全覆盖、计算耗时显式回传与默认高精度模型策略**：
-    - **美元符号残留修复**：题干标题中的数学公式（如 `$\angle BAC=90^\circ$`）在小问 Tab 标签（`btn.innerText`）、步骤标题栏（`subStep.innerText`）和解答标题中原先使用了纯文本赋值导致未触发 KaTeX 渲染；统一改造为调用 `formatMathAndMarkdown(...)` 赋值 `innerHTML`，实现全页面 100% 优雅公式渲染；
-    - **耗时实时可视化**：后端 `server.py` 计算并回传 `elapsed` 秒数，前端完成时显式呈现 `⏱️ 本次推演计算耗时：X 分 Y 秒`；
-    - **默认模型策略**：鉴于初中压轴几何题对多步辅助线探索、旋转倒角与“禁止使用三角函数”负向约束的高难度要求，默认模型坚定锁定为 **`Gemini 3.8 Flash (High)`**，确保数学推演精度与辅助线灵感处于最佳状态。
-13. **直角方框回归与高亮结论裸 LaTeX 兜底**：
-    - **垂足 M 又变圆弧的真因**：正交投影吸附原先仅在偏差 `> 1e-5°` 时才触发；而 6 位小数坐标产生的偏差约 `4e-6°`，既小于该阈值（不吸附），又远大于 GeoGebra 直角方框判定阈值（约 `1e-8` rad ≈ `6e-7°`），于是落入“漏网区间”画成圆弧。现将触发阈值降为 `1e-13`，只要在 88°~92° 就一律吸附到精确 90°；
-    - **高亮结论 `\angle` 裸露**：模型有时在 `==...==` 中漏写 `$...$`。前端 `formatMathAndMarkdown` 增加兜底：对不含 `$` 但含 LaTeX 命令的 `==...==` 块，按非 ASCII 字符切段并为含反斜杠命令的片段自动包上 `$...$`；同时在 `server.py` 提示词中新增铁律，要求高亮块内数学符号必须用 `$...$` 包裹。
+### 探索中解决的重大问题与避坑经验 (Lessons Learned)
+1. **`viewer.html` 拆分方案的选择（为何否决物理拆分为外联 CSS/JS）**：
+   - **踩坑风险**：`viewer.html` 具备“保存单文件离线微课”功能（通过内存深克隆当前 DOM 并序列化导出）。若直接将 CSS/JS 抽离为独立的外部文件，导出的单文件一旦脱离本地目录就会失去样式与脚本；
+   - **解决方案**：采取**方案 A（内部模块化解耦）**，在保持单个 HTML 自包含特性的前提下，在文件内部划分清晰的模块标头与逻辑边界，兼顾可维护性与零依赖便携性。
+2. **Prompt 规范双重注入导致 Token 膨胀与模型混乱**：
+   - **原因**：早先在 `prompts.py` 中硬编码了 `GEOGEBRA_AND_TEACHING_RULES`，重构后又动态读入了 `AGENTS.md`，两份大同小异的规则同时拼入 Prompt，浪费了大量 Token；
+   - **解决方案**：统一由 `AGENTS.md` 担任单一信任源，`prompts.py` 仅保留精炼的后备降级，杜绝双重注入。
+3. **缓存命名与多模型维度的绑定**：
+   - **经验**：转录题干缓存必须严格带有模型后缀（如 `cache_{hash}_{model}_transcription.txt`），若回退使用不带模型的旧格式可能导致不同模型间的转录产物交叉污染。
+4. **macOS SSL 证书链与代理拦截 ([SSL: CERTIFICATE_VERIFY_FAILED])**：
+   - **解决方案**：在 `utils.py` 中统一提供绕过证书链阻断的 `create_ssl_context()` 及直连/代理切换的 `build_http_opener()`。
+5. **超大原图（8~10MB）导致 TextIn 60 秒写超时**：
+   - **解决方案**：后端 `utils.optimize_image_bytes` 自动调用 macOS 原生 `sips` 在 0.14 秒内将大图转为高清 JPEG（体积减少 92%+），彻底杜绝上传超时。
+6. **DeepSeek 长思考假死与 Ellipsis 序列化异常**：
+   - **解决方案**：改用 SSE 流式传输 (`stream: True`) + 3 秒控制台心跳输出；在 `prompts.py` 中引导模型完成草稿后立即输出 JSON；在 `utils.extract_json_from_text` 中增加对 `[ ... ]` 的过滤清洗，防止 Python AST 解析出无法序列化的 `Ellipsis` 对象。
+7. **Gemini RPC 轮询停机条件误判与截断 JSON 解析异常 ('[' was never closed)**：
+   - **踩坑风险**：`gemini_rpc_reasoner.py` 早先误将非终态的 `finishReason`（如 `FINISH_REASON_UNSPECIFIED`）作为完成判定，导致模型刚吐出第一批字符即提前跳出循环并销毁会话；加之模型截断后尾部缺少闭合括号，触发 AST 解析异常 `SyntaxError: '[' was never closed`；
+   - **解决方案**：
+     1. 在 `prompts.py` 尾部引入专属结束信标 `===END_OF_LESSON===`；
+     2. 严格校验 `latest_status in DONE/COMPLETED` 或 `latest_finish_reason in STOP/END_TURN/MAX_TOKENS`，并结合 4 次连续文本无变化稳定检测；
+     3. 维持深度推演模型 `gemini-3.8-flash-high`，依托五级 JSON 自愈与精确流式停机检测支撑完整思考与生成闭环；
+     4. 在 `utils.py` 中升级五级 JSON 自愈管线（阶段 5：括号栈反向闭合与截断数据补全 `repair_truncated_json`），即使输出被意外切断也能完整拯救已生成的几何小问与推导步骤；
+     5. 在 `AGENTS.md` 中确立铁律：凡涉及性能影响、推理档位降级等重大权衡修改必须事先征得用户明确同意。
 
 ---
 
 ## 3. 关键代码资产 (Key Code Assets)
 
-- **核心后端与服务架构（模块化解耦）**：
-  - `/Users/dean/Documents/math-tutor-workspace/server.py`：主服务入口与 Web API 路由分发（多线程 HTTP），处理 `/api/status` 与 `/api/solve`，托管前端静态资源。
-  - `/Users/dean/Documents/math-tutor-workspace/solver.py`：核心几何微课推演引擎，封装 Antigravity 本地 RPC 通信、会话沙箱生命周期、非阻塞轮询与数据持久化。
-  - `/Users/dean/Documents/math-tutor-workspace/config.py`：集中管理工作区路径、监听端口、模型枚举映射（默认 Gemini 3.8 Flash High）与轮询超时配置。
-  - `/Users/dean/Documents/math-tutor-workspace/prompts.py`：集中管理系统角色设定、JSON 格式规范与 GeoGebra 教学绘图铁律，输出组装好的高阶提示词。
-  - `/Users/dean/Documents/math-tutor-workspace/utils.py`：通用底层工具集（Antigravity 进程探测、局域网物理 IP 提取、四级容错 JSON 自愈提取管线）。
-- **前端与数据载体**：
-  - `/Users/dean/Documents/math-tutor-workspace/viewer.html`：单页 Web App 主界面，包含 GeoGebra 交互画板容器、几何标注工具栏、字幕分步排版器、KaTeX 公式渲染、图片上传及状态控制器。
-  - `/Users/dean/Documents/math-tutor-workspace/lesson.js`：当前题目经过完整格式化、带有启发式辅助线思维与等长边标注的完整微课数据载体。
-- **系统行为与契约规则**：
-  - `/Users/dean/Documents/math-tutor-workspace/.antigravity/AGENTS.md`：Antigravity 模型在当前工作区生成微课时遵循的最高准则与铁律（含 1:1 还原、启发式辅助线引导、按行排版与高亮规则）。
-  - `/Users/dean/Documents/math-tutor-workspace/.agent/skills/save/SKILL.md` 与 `~/.gemini/config/skills/save/SKILL.md`：`/save` 命令规范与执行指南（工作区与全局双副本）。
-  - `/Users/dean/Documents/math-tutor-workspace/.agent/skills/resume/SKILL.md` 与 `~/.gemini/config/skills/resume/SKILL.md`：`/resume` 命令规范与执行指南（工作区与全局双副本）。
-- **交接与状态文件**：
-  - `/Users/dean/Documents/math-tutor-workspace/docs/HANDOFF.md`：跨会话上下文交接基准文档。
+- **流水线插件与架构核心**：
+  - [`config.json`](file:///Users/dean/Documents/math-tutor-workspace/config.json)：系统外部配置与模型超参数集中管理。
+  - [`.env`](file:///Users/dean/Documents/math-tutor-workspace/.env) 与 [`.env.example`](file:///Users/dean/Documents/math-tutor-workspace/.env.example)：敏感 API 凭证管理文件（受 `.gitignore` 保护）。
+  - [`plugins/base.py`](file:///Users/dean/Documents/math-tutor-workspace/plugins/base.py)：三大角色抽象基类 (`BaseCleaner`, `BaseTranscriber`, `BaseReasoner`)。
+  - [`plugins/registry.py`](file:///Users/dean/Documents/math-tutor-workspace/plugins/registry.py)：热插拔插件注册表与动态工厂。
+  - [`plugins/pipeline.py`](file:///Users/dean/Documents/math-tutor-workspace/plugins/pipeline.py)：三阶段流水线调度器（含指纹缓存与耗时统计）。
+  - [`plugins/cleaners/textin_cleaner.py`](file:///Users/dean/Documents/math-tutor-workspace/plugins/cleaners/textin_cleaner.py)：TextIn 去手写清洗器。
+  - [`plugins/transcribers/gemini_rpc_transcriber.py`](file:///Users/dean/Documents/math-tutor-workspace/plugins/transcribers/gemini_rpc_transcriber.py)：Gemini 空间拓扑与题设转录器。
+  - [`plugins/reasoners/deepseek_reasoner.py`](file:///Users/dean/Documents/math-tutor-workspace/plugins/reasoners/deepseek_reasoner.py)：DeepSeek SSE 流式深度推理与板书架构师。
+  - [`plugins/reasoners/gemini_rpc_reasoner.py`](file:///Users/dean/Documents/math-tutor-workspace/plugins/reasoners/gemini_rpc_reasoner.py)：本地 Antigravity Pro 免费极速推演架构师。
+- **服务、调度与通用工具**：
+  - [`server.py`](file:///Users/dean/Documents/math-tutor-workspace/server.py)：集成启动凭证自检、多线程 HTTP 服务与全链路 DEBUG 日志记录。
+  - [`solver.py`](file:///Users/dean/Documents/math-tutor-workspace/solver.py)：流水线总入口与微课持久化调度。
+  - [`config.py`](file:///Users/dean/Documents/math-tutor-workspace/config.py)：全局 DEBUG 日志器、配置加载与路径常量导出。
+  - [`prompts.py`](file:///Users/dean/Documents/math-tutor-workspace/prompts.py)：提示词构造模块（单一信任源，消除重复注入）。
+  - [`utils.py`](file:///Users/dean/Documents/math-tutor-workspace/utils.py)：原生直连 `agy_rpc`、进程探测、四级 JSON 自愈提取管线、原生 `sips` 图像瘦身引擎与统一网络 Opener 工厂。
+  - [`viewer.html`](file:///Users/dean/Documents/math-tutor-workspace/viewer.html)：单页 Web App 主界面（模块化 7 大系统：Canvas 手绘层 + GeoGebra 引擎 + 核心控制器 + 上传控制 + 几何金句轮播 + 任务看板 + 独立课件导出）。
+  - [`README.md`](file:///Users/dean/Documents/math-tutor-workspace/README.md)：项目技术文档与使用部署说明。
+- **测试与验证手段**：
+  - 全量 Python 文件语法编译：`python3 -m py_compile *.py plugins/*.py plugins/*/*.py`
+  - 插件凭据与工厂可用性检测：`python3 -c "from plugins import PipelineManager; from config import load_app_config; PipelineManager(load_app_config()).validate_all()"`
+  - 服务本地运行：`python3 server.py`

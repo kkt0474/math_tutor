@@ -1,0 +1,41 @@
+{
+  "_comment": "初中几何微课 - 多模型插件流水线全局配置文件。凭证类敏感数据请在 .env 中配置，此文件管理模型插件、URL及可调超参数。",
+  "log_level": "DEBUG",
+  "server": {
+    "host": "0.0.0.0",
+    "port": 8765
+  },
+  "pipeline": {
+    "cleaner_provider": "textin",
+    "transcriber_provider": "gemini_rpc",
+    "reasoner_provider": "gemini_rpc"
+  },
+  "cleaner": {
+    "textin": {
+      "api_url": "https://api.textin.com/ai/service/v1/handwritten_erase",
+      "timeout": 60,
+      "use_proxy": false
+    }
+  },
+  "transcriber": {
+    "gemini_rpc": {
+      "model_slug": "gemini-3.8-flash-medium",
+      "timeout": 300,
+      "poll_interval": 1.5
+    }
+  },
+  "reasoner": {
+    "gemini_rpc": {
+      "model_slug": "gemini-3.8-flash-high",
+      "timeout": 600,
+      "poll_interval": 2.0
+    },
+    "deepseek": {
+      "base_url": "https://api.deepseek.com",
+      "model": "deepseek-v4-pro",
+      "temperature": 0.3,
+      "timeout": 600,
+      "use_proxy": false
+    }
+  }
+}
