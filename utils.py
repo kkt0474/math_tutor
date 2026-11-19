@@ -7,12 +7,11 @@
 1. 自动探测本机正在运行的 Antigravity 客户端及其 RPC 端口和 CSRF Token；
 2. 封装本机 127.0.0.1 直连 RPC 通道 (agy_rpc)，强制绕过系统代理，附带 DEBUG 级全链路日志；
 3. 获取本机局域网物理真实 IP（智能过滤 127.0.0.1 及 198.18.x.x 代理虚拟网卡）；
-4. 实现面向大模型长输出的高鲁棒性 JSON 提取与四级自愈管线（extract_json_from_text）；
+4. 实现面向大模型长输出的高鲁棒性 JSON 提取与 json-repair 状态机自愈引擎（extract_json_from_text）；
 5. 智能无损压缩超大题目图片（optimize_image_bytes，基于 macOS 原生 sips 引擎，彻底杜绝上传超时）；
 6. 统一底层 HTTPS/直连/代理 Opener 与 SSLContext 构建工厂（create_ssl_context, build_http_opener）。
 """
 
-import ast
 import json
 import re
 import ssl
@@ -20,6 +19,7 @@ import subprocess
 import time
 import urllib.error
 import urllib.request
+from json_repair import repair_json
 from config import UPLOADS_DIR, get_logger, mask_secret
 
 logger = get_logger()
@@ -286,95 +286,60 @@ def discover_local_antigravity_server() -> dict | None:
     return None
 
 
-def repair_truncated_json(raw: str) -> dict | None:
+def _protect_latex_backslashes(s: str) -> str:
     """
-    智能补全被模型提前截断的微课 JSON 字符串：
-    1. 自动闭合末尾未闭合的字符串双引号；
-    2. 清理末尾残缺的属性键名或游离逗号；
-    3. 利用括号栈反向闭合未闭合的所有大括号与中括号；
-    4. 经过转义自愈后解析，成功挽救已生成的几何小问与步骤数据。
+    保护未转义的 LaTeX 单反斜杠指令（如 \\triangle, \\frac, \\therefore, \\angle），
+    防止 JSON 解析器或状态机将 \\t/\\f/\\r/\\b 误吞为控制字符。
     """
-    start = raw.find("{")
+    s = re.sub(
+        r'(?<!\\)\\(triangle|theta|text|times|tan|therefore|frac|forall|right|rho|because|begin|bar|beta|boxed)',
+        r'\\\\\1',
+        s,
+    )
+    return re.sub(r'(?<!\\)\\(?![\\"/bfnrt]|u[0-9a-fA-F]{4})', r'\\\\', s)
+
+
+def _slice_json_root(s: str) -> str:
+    """
+    精准截取最外层 JSON 对象区间：
+    - 若最外层 `{` 存在对应的平衡闭合 `}`，截取到该闭合位置（剔除尾部多余文本）；
+    - 若最外层 `{` 尚未闭合（发生输出截断），保留到文本末尾完整内容交由 json-repair 状态机补全，
+      避免误用 rfind('}') 切丢末尾残缺的坐标与步骤数据。
+    """
+    start = s.find("{")
     if start == -1:
-        return None
-    s = raw[start:].strip()
+        return s
 
-    # 1. 检查是否存在未闭合的双引号
+    depth = 0
     in_str = False
     escape = False
-    for ch in s:
-        if ch == "\\" and not escape:
+    for idx in range(start, len(s)):
+        ch = s[idx]
+        if escape:
+            escape = False
+            continue
+        if ch == "\\" and in_str:
             escape = True
             continue
-        if ch == '"' and not escape:
-            in_str = not in_str
-        escape = False
-
-    if in_str:
-        s += '"'
-
-    # 2. 清理末尾残缺的属性键名（如 '"explanation": '）或未完成的逗号
-    s = re.sub(r',?\s*"[^"]*"\s*:\s*$', '', s)
-    s = re.sub(r',\s*$', '', s)
-
-    # 3. 利用栈平衡括号
-    stack = []
-    in_str = False
-    escape = False
-    for ch in s:
-        if ch == "\\" and not escape:
-            escape = True
-            continue
-        if ch == '"' and not escape:
+        if ch == '"':
             in_str = not in_str
             continue
-        escape = False
         if not in_str:
-            if ch in "{[":
-                stack.append(ch)
-            elif ch == "}" and stack and stack[-1] == "{":
-                stack.pop()
-            elif ch == "]" and stack and stack[-1] == "[":
-                stack.pop()
-
-    closers = {"{": "}", "[": "]"}
-    for open_ch in reversed(stack):
-        s += closers[open_ch]
-
-    # 4. 转义修复与解析
-    fixed = re.sub(r'(?<!\\)\\(?![\\"/bfnrt]|u[0-9a-fA-F]{4})', r'\\\\', s)
-    fixed = re.sub(r',\s*([\]}])', r'\1', fixed)
-
-    try:
-        data = json.loads(fixed, strict=False)
-        if isinstance(data, dict) and "questions" in data:
-            return data
-    except Exception:
-        pass
-
-    try:
-        py_repr = re.sub(r'\btrue\b', 'True', fixed)
-        py_repr = re.sub(r'\bfalse\b', 'False', py_repr)
-        py_repr = re.sub(r'\bnull\b', 'None', py_repr)
-        py_repr = re.sub(r'\[\s*\.\.\.\s*\]', '[]', py_repr)
-        py_repr = re.sub(r'\b\.\.\.\b', '""', py_repr)
-        res = ast.literal_eval(py_repr)
-        if isinstance(res, dict) and "questions" in res:
-            return res
-    except Exception:
-        pass
-
-    return None
+            if ch == "{":
+                depth += 1
+            elif ch == "}":
+                depth -= 1
+                if depth == 0:
+                    return s[start : idx + 1]
+    return s[start:]
 
 
 def extract_json_from_text(text: str) -> dict:
     """
-    五级高鲁棒性 JSON 自愈提取管线，专治大模型输出中常见的各种格式缺陷：
-    - 阶段 1：标准宽松 json.loads；
-    - 阶段 2：LaTeX 反斜杠与尾部逗号自愈；
-    - 阶段 3：GeoGebra 嵌套引号与中英标点修复；
-    - 阶段 4：Python AST 语法树容错解析；
-    - 阶段 5：残缺/截断 JSON 括号栈反向平衡与结构补全。
+    高鲁棒性微课 JSON 提取与状态机自愈管线：
+    - 阶段 1：极速通道（标准宽松 json.loads）；
+    - 阶段 2：LaTeX 反斜杠保护 + json-repair 有限状态机自愈（自动兼容缺失/多余逗号、
+      误写分号/句号、未转义引号、Markdown 杂质以及截断未闭合括号）。
     """
     parse_error: Exception | None = None
 
@@ -387,90 +352,40 @@ def extract_json_from_text(text: str) -> dict:
 
     text_clean = text.replace("===END_OF_LESSON===", "").strip()
 
-    fence_match = re.search(r"```(?:json|javascript|js)?\s*(\{[\s\S]*\})\s*```", text_clean)
+    fence_match = re.search(r"```(?:json|javascript|js)?\s*(\{[\s\S]*?)(?:\s*```|$)", text_clean)
     if fence_match:
         text_clean = fence_match.group(1).strip()
         logger.debug("已从 Markdown 代码块中提取 JSON 主体 (长度: %d 字符)", len(text_clean))
     else:
-        start = text_clean.find("{")
-        end = text_clean.rfind("}")
-        if start != -1 and end != -1 and end > start:
-            text_clean = text_clean[start : end + 1]
-            logger.debug("已通过首尾大括号截取 JSON 主体 (start=%d, end=%d, 长度=%d)", start, end, len(text_clean))
+        text_clean = _slice_json_root(text_clean)
+        logger.debug("已精准定位 JSON 主体 (长度=%d)", len(text_clean))
 
     text_clean = re.sub(r"^window\.LESSON_DATA\s*=\s*", "", text_clean).rstrip(";").strip()
 
-    # 阶段 1：尝试直接解析（宽松模式）
+    # 阶段 1：标准解析快速通道
     try:
         data = json.loads(text_clean, strict=False)
-        logger.debug("✅ [JSON提取-阶段1] 标准 json.loads 直接解析成功！包含小问数: %d", len(data.get("questions", [])))
-        return data
+        if isinstance(data, dict):
+            logger.debug("✅ [JSON提取-阶段1] 标准 json.loads 直接解析成功！包含小问数: %d", len(data.get("questions", [])))
+            return data
     except Exception as err:
         parse_error = err
-        logger.warning("⚠️ [JSON提取-阶段1] 基础解析未通过 (%s)，启动阶段 2 自愈管线...", err)
+        logger.warning("⚠️ [JSON提取-阶段1] 基础解析未通过 (%s)，启动 json-repair 状态机自愈...", err)
 
-    # 阶段 2：全方位 LaTeX 单反斜杠自愈 + 标点自愈
-    fixed = re.sub(r'\"[.。]\s*([\r\n]+\s*\")', r'",\1', text_clean)
-    fixed = re.sub(
-        r'\}\s*,\s*([\r\n]+\s*"(?:steps|solutionMarkdown|thoughtAnalysis|name|modelName|explanation|ggbCommands)"\s*:)',
-        r',\1',
-        fixed,
-    )
-    fixed = re.sub(r'(?<!\\)\\(?![\\"/bfnrt]|u[0-9a-fA-F]{4})', r'\\\\', fixed)
-    fixed = re.sub(r',\s*([\]}])', r'\1', fixed)
-
+    # 阶段 2：LaTeX 反斜杠保护 + json-repair 状态机通用自愈
     try:
-        data = json.loads(fixed, strict=False)
-        logger.info("✅ [JSON提取-阶段2] LaTeX 转义与尾部逗号自愈成功！")
-        return data
+        protected = _protect_latex_backslashes(text_clean)
+        repaired = repair_json(protected, return_objects=True)
+        if isinstance(repaired, dict) and "questions" in repaired:
+            q_count = len(repaired.get("questions", []))
+            s_count = sum(len(q.get("steps", [])) for q in repaired.get("questions", []) if isinstance(q, dict))
+            logger.info("✅ [JSON提取-阶段2] json-repair 状态机自愈成功！解析 %d 个小问共 %d 个步骤", q_count, s_count)
+            return repaired
+        parse_error = ValueError(f"json-repair 返回结构缺少 questions 字段 (type={type(repaired).__name__})")
     except Exception as err:
         parse_error = err
-        logger.warning("⚠️ [JSON提取-阶段2] 未通过 (%s)，尝试阶段 3 嵌套引号与特殊符号清洗...", err)
-
-    # 阶段 3：修复 GeoGebra 嵌套引号与字符串内单双引号混乱
-    fixed2 = re.sub(r'SetColor\(([^,]+),\s*"([^"]+)"\)', r'SetColor(\1, \\"\2\\")', fixed)
-    fixed2 = re.sub(r'SetColor\(([^,]+),\s*""([^"]+)""\)', r'SetColor(\1, \\"\2\\")', fixed2)
-    fixed2 = fixed2.replace("：", ":")
-
-    try:
-        data = json.loads(fixed2, strict=False)
-        logger.info("✅ [JSON提取-阶段3] 嵌套引号修复成功解析 JSON！")
-        return data
-    except Exception as err:
-        parse_error = err
-        logger.warning("⚠️ [JSON提取-阶段3] 未通过 (%s)，尝试阶段 4 Python AST 容错提取...", err)
-
-    # 阶段 4：Python AST 解析降级
-    try:
-        py_repr = fixed2
-        py_repr = re.sub(r'\btrue\b', 'True', py_repr)
-        py_repr = re.sub(r'\bfalse\b', 'False', py_repr)
-        py_repr = re.sub(r'\bnull\b', 'None', py_repr)
-        # 清除代码块中残存的省略号 '...'，防止 ast.literal_eval 解析出无法被 JSON 序列化的 Ellipsis 对象
-        py_repr = re.sub(r'\[\s*\.\.\.\s*\]', '[]', py_repr)
-        py_repr = re.sub(r'\b\.\.\.\b', '""', py_repr)
-        res = ast.literal_eval(py_repr)
-        if isinstance(res, dict) and "questions" in res:
-            logger.info("✅ [JSON提取-阶段4] AST 结构解析成功拯救微课数据！")
-            return res
-    except Exception as err:
-        parse_error = err
-        logger.warning("⚠️ [JSON提取-阶段4] AST 解析失败 (%s)，尝试阶段 5 截断补全...", err)
-
-    # 阶段 5：残缺/截断 JSON 括号栈反向平衡与结构补全
-    try:
-        repaired_data = repair_truncated_json(text)
-        if repaired_data and isinstance(repaired_data, dict) and "questions" in repaired_data:
-            q_count = len(repaired_data.get("questions", []))
-            s_count = sum(len(q.get("steps", [])) for q in repaired_data.get("questions", []))
-            logger.info("✅ [JSON提取-阶段5] 残缺JSON括号栈反向补全成功！成功挽救 %d 个小问共 %d 个步骤", q_count, s_count)
-            return repaired_data
-    except Exception as err:
-        parse_error = err
-        logger.error("❌ [JSON提取-阶段5] 截断补全失败: %s", err)
+        logger.error("❌ [JSON提取-阶段2] json-repair 自愈失败: %s", err)
 
     err_detail = str(parse_error) if parse_error is not None else "未知 JSON 解析错误"
-    logger.error("❌ 所有 JSON 自愈机制均告竭，原始报错：%s\n文本前 500 字符预览:\n%s", err_detail, text_clean[:500])
-    if parse_error is not None:
-        raise ValueError(f"微课 JSON 解析失败: {err_detail}") from parse_error
-    raise ValueError("微课 JSON 解析失败: 无法从模型回复中提取合法数据结构")
+    logger.error("❌ JSON 提取失败，原始报错：%s\n文本前 500 字符预览:\n%s", err_detail, text_clean[:500])
+    raise ValueError(f"微课 JSON 解析失败: {err_detail}") from parse_error

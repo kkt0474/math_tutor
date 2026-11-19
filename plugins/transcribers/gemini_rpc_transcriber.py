@@ -11,7 +11,7 @@ Gemini 本地 Antigravity RPC 题设转录插件 (plugins/transcribers/gemini_rp
 import base64
 import time
 from typing import Any, Dict, Optional
-from config import WORKSPACE_DIR, get_logger, get_model_id
+from config import DEFAULT_TRANSCRIPTION_MODEL_SLUG, WORKSPACE_DIR, get_logger, get_model_id
 from plugins.base import BaseTranscriber
 from prompts import build_transcription_prompt
 from utils import agy_rpc, discover_local_antigravity_server
@@ -26,7 +26,7 @@ class GeminiRpcTranscriber(BaseTranscriber):
 
     def __init__(self, config: Dict[str, Any]):
         super().__init__(config)
-        self.model_slug = config.get("model_slug", "gemini-3.8-flash-high")
+        self.model_slug = config.get("model_slug") or DEFAULT_TRANSCRIPTION_MODEL_SLUG
         self.timeout = config.get("timeout", 300)
         self.poll_interval = config.get("poll_interval", 1.5)
 

@@ -53,6 +53,8 @@ class DeepSeekReasoner(BaseReasoner):
         # 整体推理最大总时长（秒）
         self.timeout = config.get("timeout", 600)
         self.temperature = config.get("temperature", 0.3)
+        # 默认不限制 max_tokens，使 DeepSeek-Reasoner 享受官方默认 64K 思考+正文总预算（8192 会导致长思考直接被截断）
+        self.max_tokens = config.get("max_tokens")
         self.use_proxy = bool(config.get("use_proxy", False))
 
     def validate_credentials(self) -> None:
@@ -121,10 +123,10 @@ class DeepSeekReasoner(BaseReasoner):
         body_bytes: bytes,
         actual_model: str,
         mode_label: str,
-    ) -> Tuple[str, str]:
+    ) -> Tuple[str, str, bool, str]:
         """
         发起流式 (SSE) 请求并实时读取、打印 DeepSeek 的思考链与正文输出。
-        返回 (reasoning_text, content_text)。
+        返回 (reasoning_text, content_text, timed_out, finish_reason)。
         """
         req = urllib.request.Request(
             req_url,
@@ -167,7 +169,12 @@ class DeepSeekReasoner(BaseReasoner):
                 if not choices:
                     raise RuntimeError(f"DeepSeek 返回结果为空 choices: {raw_data[:200]}")
                 msg_obj = choices[0].get("message", {})
-                return msg_obj.get("reasoning_content", "") or "", msg_obj.get("content", "") or ""
+                return (
+                    msg_obj.get("reasoning_content", "") or "",
+                    msg_obj.get("content", "") or "",
+                    False,
+                    choices[0].get("finish_reason") or "",
+                )
 
             reasoning_parts: List[str] = []
             content_parts: List[str] = []
@@ -176,11 +183,14 @@ class DeepSeekReasoner(BaseReasoner):
             chunk_count = 0
             first_token_logged = False
             last_log_time = time.time()
+            timed_out = False
+            finish_reason = ""
 
             for raw_line in resp:
                 elapsed = round(time.time() - t_start, 1)
                 if elapsed > self.timeout:
                     logger.warning("⚠️ [DeepSeekReasoner] 流式生成达到总超时上限 (%ds)，截断退出", self.timeout)
+                    timed_out = True
                     break
 
                 line = raw_line.decode("utf-8", errors="replace").strip()
@@ -206,6 +216,9 @@ class DeepSeekReasoner(BaseReasoner):
                 choices = chunk_obj.get("choices", [])
                 if not choices:
                     continue
+
+                if choices[0].get("finish_reason"):
+                    finish_reason = str(choices[0]["finish_reason"])
 
                 delta = choices[0].get("delta", {})
                 r_delta = delta.get("reasoning_content") or ""
@@ -253,12 +266,13 @@ class DeepSeekReasoner(BaseReasoner):
             full_reasoning = "".join(reasoning_parts)
             full_content = "".join(content_parts)
             logger.info(
-                "📊 [DeepSeekReasoner] 流式接收完成 | 思考链总长=%d 字符 | JSON正文总长=%d 字符 | 总耗时=%ss",
+                "📊 [DeepSeekReasoner] 流式接收完成 | finish_reason=%s | 思考链总长=%d 字符 | JSON正文总长=%d 字符 | 总耗时=%ss",
+                finish_reason or "unknown",
                 len(full_reasoning),
                 len(full_content),
                 round(time.time() - t_start, 2),
             )
-            return full_reasoning, full_content
+            return full_reasoning, full_content, timed_out, finish_reason
 
     def solve(
         self,
@@ -307,6 +321,8 @@ class DeepSeekReasoner(BaseReasoner):
                 "temperature": self.temperature,
                 "stream": True,
             }
+            if self.max_tokens:
+                payload["max_tokens"] = int(self.max_tokens)
             if "chat" in actual_model or "flash" in actual_model:
                 payload["response_format"] = {"type": "json_object"}
 
@@ -339,7 +355,7 @@ class DeepSeekReasoner(BaseReasoner):
                 )
 
                 try:
-                    reasoning_content, content = self._stream_chat_completion(
+                    reasoning_content, content, timed_out, finish_reason = self._stream_chat_completion(
                         opener=opener,
                         req_url=req_url,
                         body_bytes=body_bytes,
@@ -358,11 +374,25 @@ class DeepSeekReasoner(BaseReasoner):
                             content[:300],
                         )
 
-                    final_text = content if content.strip() else reasoning_content
-                    if not final_text.strip():
-                        raise RuntimeError("DeepSeek 流式响应未返回任何有效文本内容。")
+                    # 严格校验：思维链是模型的内部推导草稿，不能当成微课 JSON 正文解析
+                    if not content.strip():
+                        if timed_out:
+                            raise RuntimeError(
+                                f"DeepSeek 几何推演在 {self.timeout} 秒内达到超时上限截断。"
+                                f"模型输出了深度思考 ({len(reasoning_content)} 字符)，但尚未开始输出正式微课 JSON 结果。"
+                                f"建议：可在页面‘补充讲解要求’中给出思路点拨（如辅助线作法），或在 config.json 调大 deepseek 的 timeout。"
+                            )
+                        if finish_reason == "length":
+                            raise RuntimeError(
+                                f"DeepSeek 输出触及 Token 上限 (finish_reason=length) 被服务端截断，"
+                                f"思维链已消耗 {len(reasoning_content)} 字符，尚未输出正式微课 JSON。"
+                            )
+                        raise RuntimeError(
+                            f"DeepSeek 仅输出了思维链 ({len(reasoning_content)} 字符，finish_reason={finish_reason or 'unknown'})，"
+                            f"未输出有效微课 JSON 结果。建议重新提交推演。"
+                        )
 
-                    lesson_data = extract_json_from_text(final_text)
+                    lesson_data = extract_json_from_text(content)
                     return lesson_data
 
                 except urllib.error.HTTPError as e:

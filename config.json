@@ -19,14 +19,14 @@
   },
   "transcriber": {
     "gemini_rpc": {
-      "model_slug": "gemini-3.8-flash-medium",
+      "model_slug": "gemini-4-hydrogen-xhigh",
       "timeout": 300,
       "poll_interval": 1.5
     }
   },
   "reasoner": {
     "gemini_rpc": {
-      "model_slug": "gemini-3.8-flash-high",
+      "model_slug": "gemini-4-hydrogen-xhigh",
       "timeout": 600,
       "poll_interval": 2.0
     },
@@ -37,5 +37,44 @@
       "timeout": 600,
       "use_proxy": false
     }
+  },
+  "models": {
+    "model_map": {
+      "gemini-4-hydrogen-xhigh": "MODEL_PLACEHOLDER_M528",
+      "gemini-4-hydrogen-high": "MODEL_PLACEHOLDER_M525",
+      "gemini-4-hydrogen-medium": "MODEL_PLACEHOLDER_M526",
+      "gemini-4-hydrogen-low": "MODEL_PLACEHOLDER_M527",
+      "gemini-4-argon-high": "MODEL_PLACEHOLDER_M417",
+      "gemini-4-argon-medium": "MODEL_PLACEHOLDER_M418",
+      "gemini-3.8-flash-high": "MODEL_PLACEHOLDER_M318",
+      "gemini-3.8-flash-medium": "MODEL_PLACEHOLDER_M319",
+      "gemini-3.8-flash-low": "MODEL_PLACEHOLDER_M320"
+    },
+    "reasoner_options": [
+      {
+        "value": "gemini-4-hydrogen-xhigh",
+        "label": "Gemini 4 Hydrogen XHigh - 极致深度推演 (默认)",
+        "default": true
+      },
+      {
+        "value": "gemini-4-argon-high",
+        "label": "Gemini 4 Argon High (Pro) - 深度旗舰推演"
+      },
+      {
+        "value": "deepseek-v4-pro",
+        "label": "DeepSeek-V4-Pro (deepseek-v4-pro) - 旗舰深度推理"
+      }
+    ],
+    "transcriber_options": [
+      {
+        "value": "gemini-4-hydrogen-medium",
+        "label": "Gemini 4 Hydrogen Medium (极速转录)"
+      },
+      {
+        "value": "gemini-4-hydrogen-xhigh",
+        "label": "Gemini 4 Hydrogen XHigh (极致思考等级 - 默认)",
+        "default": true
+      }
+    ]
   }
 }

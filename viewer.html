@@ -607,6 +607,120 @@
             font-weight: 500;
         }
 
+        /* GeoGebra 画板加载专用沉浸遮罩 */
+        .ggb-loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #0b1120 0%, #131c2e 100%);
+            z-index: 35;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            transition: opacity 0.4s ease, visibility 0.4s ease;
+        }
+
+        .ggb-loading-overlay.fade-out {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .ggb-loading-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            padding: 24px 30px;
+            max-width: 480px;
+        }
+
+        .ggb-loading-icon-wrap {
+            position: relative;
+            width: 68px;
+            height: 68px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 16px;
+        }
+
+        .ggb-loading-ring {
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            border: 3px solid rgba(56, 189, 248, 0.15);
+            border-top-color: #38bdf8;
+            border-right-color: #818cf8;
+            animation: ggbSpin 1.1s cubic-bezier(0.5, 0.1, 0.5, 0.9) infinite;
+        }
+
+        .ggb-loading-cat {
+            font-size: 30px;
+            animation: ggbCatBounce 1.5s ease-in-out infinite;
+        }
+
+        @keyframes ggbSpin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes ggbCatBounce {
+            0%, 100% { transform: scale(1) translateY(0); }
+            50% { transform: scale(1.08) translateY(-4px); }
+        }
+
+        .ggb-loading-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #f8fafc;
+            margin-bottom: 6px;
+            letter-spacing: 0.5px;
+        }
+
+        .ggb-loading-sub {
+            font-size: 13px;
+            color: #94a3b8;
+            margin-bottom: 16px;
+        }
+
+        .ggb-loading-bar-wrap {
+            width: 260px;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 999px;
+            overflow: hidden;
+            position: relative;
+            margin-bottom: 14px;
+        }
+
+        .ggb-loading-bar-fill {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: 45%;
+            background: linear-gradient(90deg, #38bdf8, #818cf8, #38bdf8);
+            border-radius: 999px;
+            animation: ggbBarMove 1.6s ease-in-out infinite;
+        }
+
+        @keyframes ggbBarMove {
+            0% { left: -45%; width: 30%; }
+            50% { left: 30%; width: 50%; }
+            100% { left: 100%; width: 30%; }
+        }
+
+        .ggb-loading-tip {
+            font-size: 11.5px;
+            color: #64748b;
+            line-height: 1.5;
+            transition: color 0.3s;
+        }
+
         /* 自由手绘批注工具栏（靠左侧垂直悬浮，紧凑窄版） */
         .annot-bar {
             position: absolute;
@@ -1662,10 +1776,133 @@
             background: #38bdf8;
             color: #000;
         }
+
+        /* 全局现代悬浮 Toast 消息提示 */
+        .toast-container {
+            position: fixed;
+            top: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 999999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            pointer-events: none;
+            max-width: 90vw;
+        }
+
+        .toast-item {
+            pointer-events: auto;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 20px;
+            background: rgba(19, 28, 46, 0.95);
+            border-radius: 10px;
+            box-shadow: 0 10px 32px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(16px);
+            font-size: 13.5px;
+            color: #f1f5f9;
+            min-width: 320px;
+            max-width: 680px;
+            animation: toastSlideDown 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            transition: all 0.25s ease;
+        }
+
+        .toast-item.toast-success {
+            border-left: 4px solid #10b981;
+            box-shadow: 0 10px 32px rgba(0, 0, 0, 0.6), 0 0 24px rgba(16, 185, 129, 0.25);
+        }
+
+        .toast-item.toast-error {
+            border-left: 4px solid #f43f5e;
+            box-shadow: 0 10px 32px rgba(0, 0, 0, 0.6), 0 0 24px rgba(244, 63, 94, 0.25);
+        }
+
+        .toast-item.toast-warning {
+            border-left: 4px solid #facc15;
+            box-shadow: 0 10px 32px rgba(0, 0, 0, 0.6), 0 0 24px rgba(250, 204, 21, 0.25);
+        }
+
+        .toast-item.toast-info {
+            border-left: 4px solid #38bdf8;
+            box-shadow: 0 10px 32px rgba(0, 0, 0, 0.6), 0 0 24px rgba(56, 189, 248, 0.25);
+        }
+
+        .toast-item.toast-fade-out {
+            opacity: 0;
+            transform: translateY(-16px) scale(0.96);
+        }
+
+        .toast-icon {
+            font-size: 18px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+        }
+
+        .toast-content {
+            flex: 1;
+            line-height: 1.5;
+            word-break: break-word;
+        }
+
+        .toast-action-btn {
+            background: #38bdf8;
+            color: #0f172a;
+            border: none;
+            border-radius: 6px;
+            padding: 5px 12px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s;
+            margin-left: 6px;
+            flex-shrink: 0;
+        }
+
+        .toast-action-btn:hover {
+            background: #7dd3fc;
+            box-shadow: 0 0 12px rgba(56, 189, 248, 0.4);
+            transform: translateY(-1px);
+        }
+
+        .toast-close-btn {
+            background: none;
+            border: none;
+            color: #94a3b8;
+            font-size: 18px;
+            cursor: pointer;
+            padding: 2px 6px;
+            border-radius: 4px;
+            line-height: 1;
+            transition: color 0.15s;
+            flex-shrink: 0;
+        }
+
+        .toast-close-btn:hover {
+            color: #fff;
+        }
+
+        @keyframes toastSlideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-24px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
     </style>
 </head>
 
 <body>
+
+    <!-- 全局现代悬浮 Toast 消息容器 -->
+    <div class="toast-container" id="globalToastContainer"></div>
 
     <header>
         <div class="header-content">
@@ -1806,6 +2043,22 @@
                 <!-- 悬浮操作指引提示 -->
                 <div class="annot-tip" id="annotTip"></div>
 
+                <!-- GeoGebra 画板加载专用沉浸式 Loading 遮罩 -->
+                <div class="ggb-loading-overlay" id="ggbLoadingOverlay">
+                    <div class="ggb-loading-box">
+                        <div class="ggb-loading-icon-wrap">
+                            <div class="ggb-loading-ring"></div>
+                            <div class="ggb-loading-cat">📐</div>
+                        </div>
+                        <div class="ggb-loading-title">正在准备几何交互画板...</div>
+                        <div class="ggb-loading-sub">初中几何微课工作台 · 正在加载 GeoGebra 数学引擎</div>
+                        <div class="ggb-loading-bar-wrap">
+                            <div class="ggb-loading-bar-fill"></div>
+                        </div>
+                        <div class="ggb-loading-tip" id="ggbLoadingTip">💡 初次加载可能需要从 CDN 获取数学引擎组件，请稍候</div>
+                    </div>
+                </div>
+
                 <div id="ggb-container"></div>
                 <!-- 自由手写涂鸦画板层（置于 GeoGebra 之上） -->
                 <canvas id="drawingCanvas"></canvas>
@@ -1881,7 +2134,7 @@
                 <div>
                     <label class="field-label">推理大模型 (Reasoner)</label>
                     <select id="modelSelect" style="margin-top:4px;" onchange="handleModelChange()">
-                        <option value="gemini-3.8-flash-high" selected>Gemini 3.8 Flash High - 快速推演 (默认)</option>
+                        <option value="gemini-4-hydrogen-xhigh" selected>Gemini 4 Hydrogen XHigh - 极致深度推演 (默认)</option>
                         <option value="gemini-4-argon-high">Gemini 4 Argon High (Pro) - 深度旗舰推演</option>
                         <option value="deepseek-v4-pro">DeepSeek-V4-Pro (deepseek-v4-pro) - 旗舰深度推理</option>
                     </select>
@@ -1889,28 +2142,37 @@
 
                 <div class="transcribe-card"
                     style="margin-top:12px; background: rgba(255,255,255,0.03); border: 1px solid var(--panel-border); border-radius: 8px; padding: 10px 12px;">
+                    <div
+                        style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; padding-bottom:8px; border-bottom:1px dashed rgba(255,255,255,0.08);">
+                        <label
+                            style="display:flex; align-items:center; gap:8px; cursor:pointer; font-weight:600; font-size:13px; color:var(--text, #e2e8f0); margin:0;"
+                            title="勾选后将先调用 TextIn 擦除试卷手写笔迹与草稿，再进行后续识别或解题">
+                            <input type="checkbox" id="cleanCheck" onchange="updateTranscribeUi()"
+                                style="width:16px; height:16px; cursor:pointer; accent-color:#38bdf8;">
+                            <span>🧹 是否清洗试卷 (TextIn 去手写涂鸦)</span>
+                        </label>
+                    </div>
                     <div style="display:flex; align-items:center; justify-content:space-between;">
                         <label
                             style="display:flex; align-items:center; gap:8px; cursor:pointer; font-weight:600; font-size:13px; color:var(--text, #e2e8f0); margin:0;">
                             <input type="checkbox" id="transcribeCheck" onchange="handleTranscribeCheckChange()"
                                 style="width:16px; height:16px; cursor:pointer; accent-color:#38bdf8;">
-                            <span>是否图转文字 (高精度流水线)</span>
+                            <span>📝 是否图转文字 (高精度拓扑转录)</span>
                         </label>
                     </div>
                     <div id="transcribeSubtext" style="font-size:11px; color:#38bdf8; margin-top:5px; line-height:1.4;">
-                        ✨ 完整流水线：TextIn 物理去涂鸦 ➔ Gemini 空间拓扑转录 ➔ 大模型解题
+                        ✨ 空间转录流水线：原图 ➔ Gemini 空间拓扑转录 ➔ 大模型解题
                     </div>
 
                     <div id="transcribeModelWrapper" style="margin-top:8px;">
-                        <div
-                            style="font-size:11px; color:#94a3b8; margin-bottom:4px; display:flex; justify-content:space-between; align-items:center;">
-                            <span>Gemini 图转文字模型</span>
-                            <span id="dsNotice" style="color:#f59e0b; display:none; font-size:10px;">🔒 DeepSeek
-                                仅支持文本，转录已强制锁定开启</span>
+                        <div style="font-size:11px; color:#94a3b8; margin-bottom:4px;">
+                            <div style="white-space:nowrap;">Gemini 图转文字模型</div>
+                            <div id="dsNotice" style="color:#f59e0b; display:none; font-size:10.5px; margin-top:2px;">🔒
+                                DeepSeek 仅支持文本，转录已强制锁定开启</div>
                         </div>
                         <select id="transcribeModelSelect" style="width:100%; font-size:12px; padding:6px 8px;">
-                            <option value="gemini-3.8-flash-medium" selected>Gemini 3.8 Flash Medium (默认，极速转录)</option>
-                            <option value="gemini-3.8-flash-high">Gemini 3.8 Flash High (高思考等级)</option>
+                            <option value="gemini-4-hydrogen-medium">Gemini 4 Hydrogen Medium (极速转录)</option>
+                            <option value="gemini-4-hydrogen-xhigh" selected>Gemini 4 Hydrogen XHigh (极致思考等级 - 默认)</option>
                         </select>
                     </div>
                 </div>
@@ -2208,6 +2470,118 @@
         }
 
         // ==========================================
+        // 全局现代悬浮 Toast 消息提示与画板 Loading 控制器
+        // ==========================================
+        let _ggbLoadingTimer = null;
+
+        function showGgbLoading(tipText = "💡 初次加载可能需要从 CDN 获取数学引擎组件，请稍候") {
+            const overlay = document.getElementById('ggbLoadingOverlay');
+            if (!overlay) return;
+            overlay.classList.remove('fade-out');
+            overlay.style.display = 'flex';
+            const tip = document.getElementById('ggbLoadingTip');
+            if (tip) tip.innerText = tipText;
+
+            if (_ggbLoadingTimer) clearTimeout(_ggbLoadingTimer);
+            _ggbLoadingTimer = setTimeout(() => {
+                const curTip = document.getElementById('ggbLoadingTip');
+                if (curTip && overlay.style.display !== 'none' && !overlay.classList.contains('fade-out')) {
+                    curTip.innerText = "⏳ 引擎组件正在加载中（网络受限时可能稍慢），请耐心稍候...";
+                }
+            }, 12000);
+        }
+
+        function hideGgbLoading() {
+            if (_ggbLoadingTimer) {
+                clearTimeout(_ggbLoadingTimer);
+                _ggbLoadingTimer = null;
+            }
+            const overlay = document.getElementById('ggbLoadingOverlay');
+            if (!overlay) return;
+            overlay.classList.add('fade-out');
+            setTimeout(() => {
+                if (overlay.classList.contains('fade-out')) {
+                    overlay.style.display = 'none';
+                }
+            }, 420);
+        }
+
+        /**
+         * 全局现代悬浮 Toast 消息提示
+         * @param {string} html 消息内容（支持 HTML）
+         * @param {string} type 'success' | 'error' | 'warning' | 'info'
+         * @param {number} duration 停留时间 (ms)，默认 5000ms
+         * @param {object|null} actionBtn 附带操作按钮 { text: string, onClick: Function }
+         */
+        function showToast(html, type = 'info', duration = 5000, actionBtn = null) {
+            let container = document.getElementById('globalToastContainer');
+            if (!container) {
+                container = document.createElement('div');
+                container.className = 'toast-container';
+                container.id = 'globalToastContainer';
+                document.body.appendChild(container);
+            }
+
+            const icons = {
+                success: '🎉',
+                error: '❌',
+                warning: '⚠️',
+                info: 'ℹ️'
+            };
+            const icon = icons[type] || 'ℹ️';
+
+            const toast = document.createElement('div');
+            toast.className = `toast-item toast-${type}`;
+
+            let actionHtml = '';
+            if (actionBtn && actionBtn.text) {
+                actionHtml = `<button type="button" class="toast-action-btn">${escapeHtml(actionBtn.text)}</button>`;
+            }
+
+            toast.innerHTML = `
+                <div class="toast-icon">${icon}</div>
+                <div class="toast-content">${html}</div>
+                ${actionHtml}
+                <button type="button" class="toast-close-btn" title="关闭">✕</button>
+            `;
+
+            container.appendChild(toast);
+
+            if (actionBtn && typeof actionBtn.onClick === 'function') {
+                const btn = toast.querySelector('.toast-action-btn');
+                if (btn) {
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        actionBtn.onClick();
+                    });
+                }
+            }
+
+            let dismissTimer = null;
+            const closeToast = () => {
+                if (dismissTimer) clearTimeout(dismissTimer);
+                toast.classList.add('toast-hide');
+                setTimeout(() => {
+                    if (toast.parentNode) toast.parentNode.removeChild(toast);
+                }, 300);
+            };
+
+            const closeBtn = toast.querySelector('.toast-close-btn');
+            if (closeBtn) {
+                closeBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    closeToast();
+                });
+            }
+
+            if (duration > 0) {
+                dismissTimer = setTimeout(closeToast, duration);
+            }
+
+            return toast;
+        }
+
+        // ==========================================
         // 模块 2: GeoGebra 运行时配置与 Applet 注入 (GeoGebra Applet Setup)
         // ==========================================
         const ggbParameters = {
@@ -2226,6 +2600,7 @@
             "useBrowserForJS": false,
             "appletOnLoad": function (api) {
                 ggbApp = api;
+                hideGgbLoading();
                 resizeDrawingCanvas();
                 if (typeof window.LESSON_DATA !== 'undefined' && window.LESSON_DATA) {
                     loadLessonData(window.LESSON_DATA);
@@ -2237,6 +2612,7 @@
 
         const applet = new GGBApplet(ggbParameters, '5.0');
         window.onload = function () {
+            showGgbLoading();
             applet.inject('ggb-container');
             initDrawingCanvas();
             if (window.__STANDALONE__) {
@@ -2244,9 +2620,39 @@
                 return;
             }
             setupUploadHandlers();
+            loadModelsConfig();
             handleModelChange();
             initNoteInput();
         };
+
+        async function loadModelsConfig() {
+            try {
+                const res = await fetch(`${API_BASE}/api/models`);
+                if (!res.ok) return;
+                const data = await res.json();
+                if (!data || !data.ok) return;
+
+                const populateSelect = (el, options, defaultVal) => {
+                    if (!el || !Array.isArray(options) || options.length === 0) return;
+                    el.innerHTML = '';
+                    options.forEach(opt => {
+                        const o = document.createElement('option');
+                        o.value = opt.value;
+                        o.textContent = opt.label;
+                        if (opt.default || (defaultVal && opt.value === defaultVal)) {
+                            o.selected = true;
+                        }
+                        el.appendChild(o);
+                    });
+                };
+
+                populateSelect(document.getElementById('modelSelect'), data.reasonerOptions, data.defaultReasoner);
+                populateSelect(document.getElementById('transcribeModelSelect'), data.transcriberOptions, data.defaultTranscriber);
+                handleModelChange();
+            } catch (err) {
+                console.warn("动态加载模型配置失败，使用页面内置兜底选项:", err);
+            }
+        }
 
         function initStandaloneMode() {
             document.body.classList.add('is-standalone');
@@ -2266,6 +2672,16 @@
         }
 
         const API_BASE = window.location.protocol.startsWith('http') ? window.location.origin : 'http://127.0.0.1:8765';
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
 
         // ==========================================
         // 模块 3: 微课教学核心数据与视图控制器 (Lesson Viewer Core & Stepper)
@@ -2324,11 +2740,41 @@
             for (let i = 0; i <= curStepIdx; i++) {
                 const cmds = q.steps[i].ggbCommands || [];
                 cmds.forEach(cmd => {
-                    const m = cmd.match(/^([A-Za-z0-9_]+)\s*=\s*Angle\s*\(\s*([A-Za-z0-9_']+)\s*,\s*([A-Za-z0-9_']+)\s*,\s*([A-Za-z0-9_']+)\s*\)/i);
+                    // 拦截大模型常编造的伪指令 ShowObject(obj, false/true)，转换为 GeoGebra 原生 API
+                    const showObjMatch = cmd.match(/^ShowObject\s*\(\s*([^,]+?)\s*,\s*(true|false)\s*\)$/i);
+                    if (showObjMatch) {
+                        const targetObj = showObjMatch[1].trim();
+                        const visible = showObjMatch[2].toLowerCase() === 'true';
+                        if (typeof ggbApp.setVisible === 'function') {
+                            ggbApp.setVisible(targetObj, visible);
+                        }
+                        if (!visible && typeof ggbApp.setLabelVisible === 'function') {
+                            ggbApp.setLabelVisible(targetObj, false);
+                        }
+                        return;
+                    }
+
+                    // 自动翻译常见大模型自造 GeoGebra 伪指令为官方标准命令
+                    const normalizedCmd = cmd
+                        .replace(/^SetOpacity\s*\(/i, 'SetFilling(')
+                        .replace(/^Set(?:Line|Point)Color\s*\(/i, 'SetColor(')
+                        .replace(/^SetLineWidth\s*\(/i, 'SetLineThickness(')
+                        .replace(/^SetLabel\s*\(/i, 'ShowLabel(');
+
+                    const m = normalizedCmd.match(/^([A-Za-z0-9_]+)\s*=\s*Angle\s*\(\s*([A-Za-z0-9_']+)\s*,\s*([A-Za-z0-9_']+)\s*,\s*([A-Za-z0-9_']+)\s*\)/i);
                     if (m) {
                         angleDefs[m[1].trim()] = { p1: m[2].trim(), v: m[3].trim(), p2: m[4].trim() };
                     }
-                    ggbApp.evalCommand(cmd);
+                    ggbApp.evalCommand(normalizedCmd);
+
+                    // 兜底：若创建了类似 P_CA_end / P_AD_top 的延长线内部定位点，默认隐藏其多下划线标签（防止渲染出奇怪下标）
+                    const ptDefMatch = normalizedCmd.match(/^([A-Za-z0-9]+_[A-Za-z0-9]+_[A-Za-z0-9_]+)\s*=\s*\(/);
+                    if (ptDefMatch) {
+                        const auxPt = ptDefMatch[1].trim();
+                        if (typeof ggbApp.setLabelVisible === 'function') {
+                            ggbApp.setLabelVisible(auxPt, false);
+                        }
+                    }
                 });
             }
 
@@ -2870,8 +3316,7 @@
                 // DeepSeek 选定时：必须开启图转文字，强制勾选并置灰锁定 checkbox
                 check.checked = true;
                 check.disabled = true;
-                dsNotice.style.display = 'inline';
-                // 关键点：即便选择 DeepSeek，用户依然可以自由选用 Gemini Medium 还是 High 来图转文字！
+                dsNotice.style.display = 'block';
                 transSelect.disabled = false;
                 transSelect.style.opacity = '1';
                 transSelect.style.cursor = 'default';
@@ -2896,13 +3341,23 @@
         }
 
         function updateTranscribeUi() {
-            const check = document.getElementById('transcribeCheck');
+            const cleanCheck = document.getElementById('cleanCheck');
+            const transCheck = document.getElementById('transcribeCheck');
             const subtext = document.getElementById('transcribeSubtext');
-            if (check.checked) {
+            const enableClean = !!(cleanCheck && cleanCheck.checked);
+            const enableTrans = !!(transCheck && transCheck.checked);
+
+            if (enableClean && enableTrans) {
                 subtext.innerHTML = '✨ 完整流水线：TextIn 物理去涂鸦 ➔ Gemini 空间拓扑转录 ➔ 大模型解题';
                 subtext.style.color = '#38bdf8';
+            } else if (!enableClean && enableTrans) {
+                subtext.innerHTML = '📝 空间转录流水线：原图 ➔ Gemini 空间拓扑转录 ➔ 大模型解题 (跳过清洗)';
+                subtext.style.color = '#38bdf8';
+            } else if (enableClean && !enableTrans) {
+                subtext.innerHTML = '🧹 清洗直连模式：TextIn 去涂鸦 ➔ Gemini 原生多模态看图解题';
+                subtext.style.color = '#10b981';
             } else {
-                subtext.innerHTML = '⚡ 极速直连：Gemini 原生多模态直接看图解题 (跳过清洗与转录)';
+                subtext.innerHTML = '⚡ 极速直连模式：Gemini 原生多模态直接看图解题 (跳过清洗与转录)';
                 subtext.style.color = '#10b981';
             }
         }
@@ -3046,12 +3501,7 @@
         }
 
         function escapeLogHtml(str) {
-            if (!str) return '';
-            return String(str)
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;');
+            return escapeHtml(str);
         }
 
         function appendSingleLogToDom(item) {
@@ -3087,13 +3537,31 @@
             _logRenderTimer = setTimeout(processLogQueue, delay);
         }
 
-        function updatePipelineSteps(stage, enableTranscription) {
+        let _activeEnableCleaning = false;
+        let _activeEnableTranscription = true;
+
+        function updatePipelineSteps(stage, enableTranscription = _activeEnableTranscription, enableCleaning = _activeEnableCleaning) {
             const bar = document.getElementById('pipelineStepsBar');
             const footerStage = document.getElementById('loadingFooterStage');
             if (!bar) return;
 
-            const isMultiModalDirect = (enableTranscription === false);
-            if (isMultiModalDirect) {
+            // 构建当前勾选组合对应的激活节点列表
+            const steps = [];
+            if (enableCleaning) {
+                steps.push({ id: 1, label: "试卷去笔迹", desc: "底图物理去笔迹" });
+            }
+            if (enableTranscription) {
+                steps.push({ id: 2, label: "空间题设转录", desc: "空间几何拓扑提取" });
+            }
+            steps.push({
+                id: 3,
+                label: enableTranscription ? "深度几何推演" : "原生视觉几何推演",
+                desc: enableTranscription ? "深度证明与板书生成" : "原生多模态看图推演"
+            });
+
+            // 仅 1 步（极速直连）时居中展示
+            if (steps.length === 1) {
+                delete bar.dataset.sig;
                 bar.innerHTML = `
                     <div class="step-node active" style="margin: 0 auto;">
                         <span class="step-dot">⚡</span>
@@ -3104,55 +3572,41 @@
                 return;
             }
 
-            if (!document.getElementById('stepNode1')) {
-                bar.innerHTML = `
-                    <div class="step-node active" id="stepNode1">
-                        <span class="step-dot">1</span>
-                        <span>试卷去笔迹</span>
-                    </div>
-                    <span class="step-arrow">➔</span>
-                    <div class="step-node" id="stepNode2">
-                        <span class="step-dot">2</span>
-                        <span>空间题设转录</span>
-                    </div>
-                    <span class="step-arrow">➔</span>
-                    <div class="step-node" id="stepNode3">
-                        <span class="step-dot">3</span>
-                        <span>深度几何推演</span>
-                    </div>
-                `;
+            // 按激活的步骤数动态构建进度条 DOM
+            const sig = steps.map(s => s.id).join(',');
+            if (bar.dataset.sig !== sig) {
+                bar.dataset.sig = sig;
+                bar.innerHTML = steps.map((s, idx) => {
+                    const arrow = idx < steps.length - 1 ? '<span class="step-arrow">➔</span>' : '';
+                    return `
+                        <div class="step-node" id="stepNode${s.id}">
+                            <span class="step-dot">${idx + 1}</span>
+                            <span>${s.label}</span>
+                        </div>
+                        ${arrow}
+                    `;
+                }).join('');
             }
 
-            const n1 = document.getElementById('stepNode1');
-            const n2 = document.getElementById('stepNode2');
-            const n3 = document.getElementById('stepNode3');
-            if (!n1 || !n2 || !n3) return;
+            let curIdx = steps.findIndex(s => s.id >= stage);
+            if (curIdx === -1) curIdx = steps.length - 1;
 
-            if (stage <= 1) {
-                n1.className = "step-node active";
-                n1.querySelector('.step-dot').innerText = "1";
-                n2.className = "step-node";
-                n2.querySelector('.step-dot').innerText = "2";
-                n3.className = "step-node";
-                n3.querySelector('.step-dot').innerText = "3";
-                if (footerStage) footerStage.innerText = "阶段 1/3：底图物理去笔迹";
-            } else if (stage === 2) {
-                n1.className = "step-node done";
-                n1.querySelector('.step-dot').innerText = "✓";
-                n2.className = "step-node active";
-                n2.querySelector('.step-dot').innerText = "2";
-                n3.className = "step-node";
-                n3.querySelector('.step-dot').innerText = "3";
-                if (footerStage) footerStage.innerText = "阶段 2/3：空间几何拓扑提取";
-            } else if (stage >= 3) {
-                n1.className = "step-node done";
-                n1.querySelector('.step-dot').innerText = "✓";
-                n2.className = "step-node done";
-                n2.querySelector('.step-dot').innerText = "✓";
-                n3.className = "step-node active";
-                n3.querySelector('.step-dot').innerText = "3";
-                if (footerStage) footerStage.innerText = "阶段 3/3：深度证明与板书生成";
-            }
+            steps.forEach((s, idx) => {
+                const el = document.getElementById(`stepNode${s.id}`);
+                if (!el) return;
+                const dot = el.querySelector('.step-dot');
+                if (idx < curIdx) {
+                    el.className = "step-node done";
+                    if (dot) dot.innerText = "✓";
+                } else if (idx === curIdx) {
+                    el.className = "step-node active";
+                    if (dot) dot.innerText = String(idx + 1);
+                    if (footerStage) footerStage.innerText = `阶段 ${idx + 1}/${steps.length}：${s.desc}`;
+                } else {
+                    el.className = "step-node";
+                    if (dot) dot.innerText = String(idx + 1);
+                }
+            });
         }
 
         async function pollPipelineProgress() {
@@ -3165,7 +3619,7 @@
 
                 if (!_currentAbortController) return;
 
-                updatePipelineSteps(p.stage);
+                updatePipelineSteps(p.stage, _activeEnableTranscription, _activeEnableCleaning);
 
                 const logs = p.logs || [];
                 if (logs.length > _renderedLogCount) {
@@ -3241,6 +3695,7 @@
             const rawNote = document.getElementById('noteInput').value;
             localStorage.setItem('math_tutor_last_note', rawNote);
             const note = rawNote.trim();
+            const enableCleaning = !!(document.getElementById('cleanCheck') && document.getElementById('cleanCheck').checked);
             const enableTranscription = document.getElementById('transcribeCheck').checked;
             const transSelect = document.getElementById('transcribeModelSelect');
             const transcriptionModel = transSelect.value;
@@ -3250,6 +3705,9 @@
                 showStatus("⚠️ DeepSeek 模型仅支持纯文本输入，必须开启【是否图转文字】！", "#f43f5e");
                 return;
             }
+
+            _activeEnableCleaning = enableCleaning;
+            _activeEnableTranscription = enableTranscription;
 
             // 1. 初始化推演状态看板
             _renderedLogCount = 0;
@@ -3269,12 +3727,16 @@
 
             const titleEl = document.getElementById('loadingTitleText');
             if (titleEl) {
-                titleEl.innerText = enableTranscription
-                    ? `正在高精度推演 (TextIn ➔ Gemini ➔ ${modelName})...`
+                const chainParts = [];
+                if (enableCleaning) chainParts.push("TextIn");
+                if (enableTranscription) chainParts.push("Gemini 转录");
+                chainParts.push(modelName);
+                titleEl.innerText = chainParts.length > 1
+                    ? `正在高精度推演 (${chainParts.join(" ➔ ")})...`
                     : `正在调用 ${modelName} 极速视觉推演...`;
             }
 
-            updatePipelineSteps(1, enableTranscription);
+            updatePipelineSteps(enableCleaning ? 1 : (enableTranscription ? 2 : 3), enableTranscription, enableCleaning);
 
             const timerBadge = document.getElementById('loadingTimerBadge');
             if (timerBadge) timerBadge.innerText = "⏱️ 00:00";
@@ -3288,11 +3750,17 @@
             _currentAbortController = new AbortController();
 
             // 初始第一条温和用户日志
+            let initLogText = `🚀 正在调用 ${modelName} 原生多模态大模型进行直接看图推演...`;
+            if (enableCleaning && enableTranscription) {
+                initLogText = "🚀 正在启动三阶段流水线：清洗试卷底图 ➔ 空间题设转录 ➔ 深度几何推演...";
+            } else if (!enableCleaning && enableTranscription) {
+                initLogText = "🚀 正在启动空间转录流水线（跳过清洗）：原图转录题设 ➔ 深度几何推演...";
+            } else if (enableCleaning && !enableTranscription) {
+                initLogText = `🚀 正在启动清洗直连模式：TextIn 去涂鸦 ➔ ${modelName} 原生看图推演...`;
+            }
             enqueueLogs([{
                 time: "00:00",
-                text: enableTranscription
-                    ? "🚀 正在启动三阶段流水线：准备清洗试卷底图、转录题设与深度几何推演..."
-                    : `🚀 正在调用 ${modelName} 原生多模态大模型进行直接看图推演...`,
+                text: initLogText,
                 type: "info"
             }]);
 
@@ -3319,68 +3787,24 @@
             _progressPollInterval = setInterval(pollPipelineProgress, 800);
 
             try {
+                let data = null;
+                try {
                 const res = await fetch(`${API_BASE}/api/solve`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         imageBase64: currentImageBase64,
                         model: model,
+                        enableCleaning: enableCleaning,
                         enableTranscription: enableTranscription,
                         transcriptionModel: transcriptionModel,
                         note: note
                     }),
                     signal: _currentAbortController.signal
                 });
-                const data = await res.json();
-
-                if (data.ok && data.lessonData) {
-                    const totalSec = data.elapsed || Math.round((Date.now() - _taskStartTime) / 1000);
-                    const mins = Math.floor(totalSec / 60);
-                    const secs = Math.round(totalSec % 60);
-                    const timeDisp = mins > 0 ? `${mins} 分 ${secs} 秒` : `${secs} 秒`;
-
-                    // 标记最终完成状态
-                    const step3 = document.getElementById('stepNode3');
-                    if (step3) {
-                        step3.className = "step-node done";
-                        const dot = step3.querySelector('.step-dot');
-                        if (dot) dot.innerText = "✓";
-                    }
-
-                    enqueueLogs([{
-                        time: formatTimeSeconds(Math.floor(totalSec)),
-                        text: `🎉 微课推演全部成功！总耗时 ${timeDisp}，动态课件已就绪。`,
-                        type: "success"
-                    }]);
-
-                    if (data.lessonData.encouragement) {
-                        displayCustomAiQuote(data.lessonData.encouragement);
-                    }
-
-                    window.LESSON_DATA = data.lessonData;
-                    loadLessonData(data.lessonData);
-                    showStatus(`🎉 微课生成成功！⏱️ <b>本次推演计算耗时：${timeDisp}</b>，已自动加载全部 ${data.lessonData.questions.length} 个小问的动态板书与规范解析。`, "#10b981");
-
-                    // 稍作停顿让用户看到成功提示与专属金句后淡出遮罩
-                    setTimeout(() => {
-                        overlay.classList.remove('active');
-                    }, 1200);
-                } else {
-                    const failSec = Math.round((Date.now() - _taskStartTime) / 1000);
-                    const errMsg = data.error || '推演未能正常完成，请稍后重试。';
-                    enqueueLogs([{
-                        time: formatTimeSeconds(failSec),
-                        text: `❌ ${errMsg}`,
-                        type: "error"
-                    }]);
-                    showStatus(`❌ 生成遇到问题 (耗时 ${failSec} 秒)：${errMsg}`, "#f43f5e");
-                    // 报错时遮罩保持 3 秒让用户看清日志，或用户随时手动点击终止关闭
-                    setTimeout(() => {
-                        overlay.classList.remove('active');
-                    }, 3200);
-                }
-            } catch (err) {
-                if (err.name === 'AbortError') {
+                data = await res.json();
+            } catch (netErr) {
+                if (netErr.name === 'AbortError') {
                     // 用户点击终止已在 cancelCurrentTask 中处理，此处无需报错
                     return;
                 }
@@ -3395,7 +3819,66 @@
                 setTimeout(() => {
                     overlay.classList.remove('active');
                 }, 3000);
-            } finally {
+                return;
+            }
+
+            if (_progressPollInterval) {
+                clearInterval(_progressPollInterval);
+                _progressPollInterval = null;
+            }
+
+            if (data && data.ok && data.lessonData) {
+                const totalSec = data.elapsed || Math.round((Date.now() - _taskStartTime) / 1000);
+                const mins = Math.floor(totalSec / 60);
+                const secs = Math.round(totalSec % 60);
+                const timeDisp = mins > 0 ? `${mins} 分 ${secs} 秒` : `${secs} 秒`;
+
+                // 标记最终完成状态
+                const step3 = document.getElementById('stepNode3');
+                if (step3) {
+                    step3.className = "step-node done";
+                    const dot = step3.querySelector('.step-dot');
+                    if (dot) dot.innerText = "✓";
+                }
+
+                enqueueLogs([{
+                    time: formatTimeSeconds(Math.floor(totalSec)),
+                    text: `🎉 微课推演全部成功！总耗时 ${timeDisp}，动态课件已就绪。`,
+                    type: "success"
+                }]);
+
+                if (data.lessonData.encouragement) {
+                    displayCustomAiQuote(data.lessonData.encouragement);
+                }
+
+                try {
+                    window.LESSON_DATA = data.lessonData;
+                    loadLessonData(data.lessonData);
+                    showStatus(`🎉 微课生成成功！⏱️ <b>本次推演计算耗时：${timeDisp}</b>，已自动加载全部 ${data.lessonData.questions.length} 个小问的动态板书与规范解析。`, "#10b981");
+                } catch (renderErr) {
+                    console.error("页面渲染微课数据异常:", renderErr);
+                    showStatus(`⚠️ 微课数据已完整生成，但在前台渲染时发生错误: ${renderErr.message}`, "#f59e0b");
+                }
+
+                // 稍作停顿让用户看到成功提示与专属金句后淡出遮罩
+                setTimeout(() => {
+                    overlay.classList.remove('active');
+                }, 1200);
+            } else {
+                const failSec = Math.round((Date.now() - _taskStartTime) / 1000);
+                const errMsg = (data && data.error) || '推演未能正常完成，请稍后重试。';
+                enqueueLogs([{
+                    time: formatTimeSeconds(failSec),
+                    text: `❌ ${errMsg}`,
+                    type: "error"
+                }]);
+                showStatus(`❌ 生成遇到问题 (耗时 ${failSec} 秒)：${errMsg}`, "#f43f5e");
+                // 报错时遮罩保持 3 秒让用户看清日志，或用户随时手动点击终止关闭
+                setTimeout(() => {
+                    overlay.classList.remove('active');
+                }, 3200);
+            }
+        } finally {
                 stopQuoteCarousel();
                 clearInterval(timerId);
                 if (_progressPollInterval) {
@@ -3564,6 +4047,7 @@
             const folderPath = folderInput ? folderInput.value.trim() : '';
 
             if (!fileName) {
+                showToast("⚠️ 请输入微课文件名！", "warning");
                 showStatus("⚠️ 请输入微课文件名！", "#facc15");
                 if (nameInput) nameInput.focus();
                 return;
@@ -3591,6 +4075,7 @@
                     await writable.write(docHtml);
                     await writable.close();
                     closeSaveLessonModal();
+                    showToast(`🎉 微课已成功保存至文件夹：<b>${escapeHtml(window._currentDirHandle.name)}/${escapeHtml(fileName)}</b>！双击即可交互播放。`, "success", 6000);
                     showStatus(`🎉 微课已成功保存至文件夹：<b>${window._currentDirHandle.name}/${fileName}</b>！双击即可交互播放。`, "#10b981");
                     return;
                 }
@@ -3617,6 +4102,16 @@
                             const safePath = (data.filePath || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
                             const openBtnHtml = `<button class="btn-open-dir-link" onclick="openFileInFolder('${safePath}')" title="在系统文件管理器中查看">📂 在文件夹中查看</button>`;
                             showStatus(`🎉 微课已成功保存至：<b>${data.filePath}</b>！双击即可在任意电脑打开播放。${openBtnHtml}`, "#10b981");
+
+                            showToast(
+                                `🎉 <b>微课保存成功！</b><div style="font-size:12.5px;color:#94a3b8;margin-top:4px;word-break:break-all;">文件路径: ${escapeHtml(data.filePath)}</div>`,
+                                'success',
+                                7000,
+                                {
+                                    text: '📂 在文件夹中查看',
+                                    onClick: () => openFileInFolder(data.filePath)
+                                }
+                            );
                             return;
                         } else {
                             throw new Error(data.error || "写入失败");
@@ -3631,12 +4126,15 @@
                     const saved = await saveFileCrossPlatform(docHtml, fileName);
                     if (saved) {
                         closeSaveLessonModal();
+                        showToast(`🎉 微课已成功导出为：<b>${escapeHtml(fileName)}</b>！该文件完全独立，双击即可全屏交互播放。`, "success", 6000);
                         showStatus(`🎉 微课已成功导出为：<b>${fileName}</b>！该文件完全独立，双击即可全屏交互播放。`, "#10b981");
                     }
                 }
             } catch (err) {
                 console.error("保存微课异常:", err);
-                showStatus(`❌ 保存微课失败: ${err.message || err}`, "#f43f5e");
+                const errMsg = err.message || String(err);
+                showToast(`❌ 保存微课失败: ${escapeHtml(errMsg)}`, "error", 8000);
+                showStatus(`❌ 保存微课失败: ${errMsg}`, "#f43f5e");
             } finally {
                 if (saveBtn) {
                     saveBtn.disabled = false;
@@ -3666,6 +4164,19 @@
             // 彻底清空 GeoGebra 容器节点，恢复为空纯净容器，杜绝 getComputedStyle 报错
             const ggbContainer = clone.querySelector('#ggb-container');
             if (ggbContainer) ggbContainer.innerHTML = '';
+
+            // 保证独立课件打开时有 Loading 遮罩展示，防止白屏
+            const ggbOverlay = clone.querySelector('#ggbLoadingOverlay');
+            if (ggbOverlay) {
+                ggbOverlay.classList.remove('fade-out');
+                ggbOverlay.style.display = 'flex';
+                const tip = ggbOverlay.querySelector('#ggbLoadingTip');
+                if (tip) tip.innerText = "💡 初次加载可能需要从 CDN 获取数学引擎组件，请稍候";
+            }
+
+            // 清理单文件中的 Toast 容器残留
+            const toastContainer = clone.querySelector('#globalToastContainer');
+            if (toastContainer) toastContainer.innerHTML = '';
 
             // 清除手绘画板尺寸属性与绘图残留
             const canvas = clone.querySelector('#drawingCanvas');

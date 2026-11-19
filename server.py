@@ -25,11 +25,13 @@ from pathlib import Path
 from config import (
     DEBUG_LOG_PATH,
     DEFAULT_MODEL_SLUG,
+    DEFAULT_TRANSCRIPTION_MODEL_SLUG,
     LESSON_JS_PATH,
     SERVER_HOST,
     SERVER_PORT,
     UPLOADS_DIR,
     WORKSPACE_DIR,
+    get_frontend_models_config,
     get_logger,
     load_app_config,
 )
@@ -228,6 +230,10 @@ class MathTutorHandler(SimpleHTTPRequestHandler):
             self._send_json({"ok": True, "dirs": get_system_default_dirs()})
             return
 
+        if self.path.startswith("/api/models"):
+            self._send_json({"ok": True, **get_frontend_models_config()})
+            return
+
         super().do_GET()
 
     def do_POST(self):
@@ -327,9 +333,10 @@ class MathTutorHandler(SimpleHTTPRequestHandler):
 
             image_data = body.get("imageBase64", "")
             extra_note = body.get("note", "").strip()
-            model_slug = body.get("model", DEFAULT_MODEL_SLUG)
+            model_slug = body.get("model") or DEFAULT_MODEL_SLUG
+            enable_cleaning = bool(body.get("enableCleaning", False))
             enable_transcription = bool(body.get("enableTranscription", True))
-            transcription_model = body.get("transcriptionModel", "gemini-3.8-flash-medium")
+            transcription_model = body.get("transcriptionModel") or DEFAULT_TRANSCRIPTION_MODEL_SLUG
 
             if not image_data:
                 logger.warning("⚠️ [/api/solve] 请求未包含 imageBase64")
@@ -357,11 +364,12 @@ class MathTutorHandler(SimpleHTTPRequestHandler):
                 return
             saved_path.write_bytes(raw_bytes)
             logger.debug(
-                "💾 [/api/solve] 原始图片已保存: %s (%d bytes, mime=%s) | model=%s | transcribe=%s (%s) | note=%s",
+                "💾 [/api/solve] 原始图片已保存: %s (%d bytes, mime=%s) | model=%s | clean=%s | transcribe=%s (%s) | note=%s",
                 saved_path,
                 len(raw_bytes),
                 mime_type,
                 model_slug,
+                enable_cleaning,
                 enable_transcription,
                 transcription_model,
                 extra_note,
@@ -386,6 +394,7 @@ class MathTutorHandler(SimpleHTTPRequestHandler):
                     mime_type=mime_type,
                     extra_note=extra_note,
                     model_slug=model_slug,
+                    enable_cleaning=enable_cleaning,
                     enable_transcription=enable_transcription,
                     transcription_model=transcription_model,
                     progress_cb=report_progress,

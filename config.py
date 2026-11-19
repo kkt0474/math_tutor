@@ -174,14 +174,14 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     },
     "transcriber": {
         "gemini_rpc": {
-            "model_slug": "gemini-3.8-flash-medium",
+            "model_slug": "gemini-4-hydrogen-xhigh",
             "timeout": 300,
             "poll_interval": 1.5
         }
     },
     "reasoner": {
         "gemini_rpc": {
-            "model_slug": "gemini-3.8-flash-high",
+            "model_slug": "gemini-4-hydrogen-xhigh",
             "timeout": 600,
             "poll_interval": 2.0
         },
@@ -192,6 +192,28 @@ DEFAULT_CONFIG: Dict[str, Any] = {
             "timeout": 600,
             "use_proxy": False
         }
+    },
+    "models": {
+        "model_map": {
+            "gemini-4-hydrogen-xhigh": "MODEL_PLACEHOLDER_M528",
+            "gemini-4-hydrogen-high": "MODEL_PLACEHOLDER_M525",
+            "gemini-4-hydrogen-medium": "MODEL_PLACEHOLDER_M526",
+            "gemini-4-hydrogen-low": "MODEL_PLACEHOLDER_M527",
+            "gemini-4-argon-high": "MODEL_PLACEHOLDER_M417",
+            "gemini-4-argon-medium": "MODEL_PLACEHOLDER_M418",
+            "gemini-3.8-flash-high": "MODEL_PLACEHOLDER_M318",
+            "gemini-3.8-flash-medium": "MODEL_PLACEHOLDER_M319",
+            "gemini-3.8-flash-low": "MODEL_PLACEHOLDER_M320"
+        },
+        "reasoner_options": [
+            {"value": "gemini-4-hydrogen-xhigh", "label": "Gemini 4 Hydrogen XHigh - 极致深度推演 (默认)", "default": True},
+            {"value": "gemini-4-argon-high", "label": "Gemini 4 Argon High (Pro) - 深度旗舰推演"},
+            {"value": "deepseek-v4-pro", "label": "DeepSeek-V4-Pro (deepseek-v4-pro) - 旗舰深度推理"}
+        ],
+        "transcriber_options": [
+            {"value": "gemini-4-hydrogen-medium", "label": "Gemini 4 Hydrogen Medium (极速转录)"},
+            {"value": "gemini-4-hydrogen-xhigh", "label": "Gemini 4 Hydrogen XHigh (极致思考等级 - 默认)", "default": True}
+        ]
     }
 }
 
@@ -225,24 +247,44 @@ APP_CONFIG: Dict[str, Any] = load_app_config()
 
 
 # ==========================================
-# 5. 常用常量快捷导出
+# 5. 常用常量快捷导出 (统一由 config.json 驱动)
 # ==========================================
 SERVER_HOST: str = APP_CONFIG.get("server", {}).get("host", "0.0.0.0")
 SERVER_PORT: int = APP_CONFIG.get("server", {}).get("port", 8765)
 
-DEFAULT_MODEL_SLUG: str = "gemini-3.8-flash-high"
+DEFAULT_MODEL_SLUG: str = APP_CONFIG.get("reasoner", {}).get("gemini_rpc", {}).get("model_slug", "gemini-4-hydrogen-xhigh")
+DEFAULT_TRANSCRIPTION_MODEL_SLUG: str = APP_CONFIG.get("transcriber", {}).get("gemini_rpc", {}).get("model_slug", "gemini-4-hydrogen-xhigh")
 
 MODEL_MAP: dict[str, str] = {
-    "gemini-3.8-flash-high": "MODEL_PLACEHOLDER_M318",
-    "gemini-3.8-flash-medium": "MODEL_PLACEHOLDER_M319",
-    "gemini-3.8-flash-low": "MODEL_PLACEHOLDER_M320",
-    "gemini-4-argon-high": "MODEL_PLACEHOLDER_M417",
-    "gemini-4-argon-medium": "MODEL_PLACEHOLDER_M418",
+    **DEFAULT_CONFIG["models"]["model_map"],
+    **APP_CONFIG.get("models", {}).get("model_map", {}),
 }
 
 
 def get_model_id(model_slug: str) -> str:
     """
     根据前端传入的模型友好标识解析出 Antigravity 底层 RPC 所需的模型枚举字符串。
+    优先读取最新 config.json 中的 models.model_map。
     """
-    return MODEL_MAP.get(model_slug, MODEL_MAP[DEFAULT_MODEL_SLUG])
+    cfg = load_app_config()
+    dynamic_map = {
+        **MODEL_MAP,
+        **cfg.get("models", {}).get("model_map", {}),
+    }
+    default_slug = cfg.get("reasoner", {}).get("gemini_rpc", {}).get("model_slug", DEFAULT_MODEL_SLUG)
+    return dynamic_map.get(model_slug) or dynamic_map.get(default_slug) or "MODEL_PLACEHOLDER_M528"
+
+
+def get_frontend_models_config() -> Dict[str, Any]:
+    """
+    返回供前端下拉框动态渲染的推理与转录模型列表配置（单一配置源）。
+    """
+    cfg = load_app_config()
+    models_cfg = cfg.get("models", {})
+    default_models = DEFAULT_CONFIG["models"]
+    return {
+        "reasonerOptions": models_cfg.get("reasoner_options") or default_models["reasoner_options"],
+        "transcriberOptions": models_cfg.get("transcriber_options") or default_models["transcriber_options"],
+        "defaultReasoner": cfg.get("reasoner", {}).get("gemini_rpc", {}).get("model_slug", DEFAULT_MODEL_SLUG),
+        "defaultTranscriber": cfg.get("transcriber", {}).get("gemini_rpc", {}).get("model_slug", DEFAULT_TRANSCRIPTION_MODEL_SLUG),
+    }
