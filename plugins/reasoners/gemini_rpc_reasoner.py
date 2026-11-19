@@ -3,7 +3,7 @@
 """
 Gemini 本地 Antigravity RPC 证明与绘图架构师插件 (plugins/reasoners/gemini_rpc_reasoner.py)
 =============================================================================
-纯文本输入，通过本地 Antigravity RPC 管道调度 Gemini 3.8 Flash / 4 Argon 等顶级模型
+纯文本输入，通过本地 Antigravity RPC 管道调度 Gemini 4 Hydrogen / 4 Argon 等顶级模型
 执行初中几何深度证明，识别经典几何模型，构造辅助线，
 并输出 GeoGebra 辅助线绘制指令及符合前端契约的 JSON 数据结构。
 """
@@ -11,7 +11,7 @@ Gemini 本地 Antigravity RPC 证明与绘图架构师插件 (plugins/reasoners/
 import base64
 import time
 from typing import Any, Dict, Optional
-from config import UPLOADS_DIR, WORKSPACE_DIR, get_logger, get_model_id
+from config import DEFAULT_MODEL_SLUG, UPLOADS_DIR, WORKSPACE_DIR, get_logger, get_model_id
 from plugins.base import BaseReasoner
 from prompts import build_reasoner_prompt, build_strict_json_prompt
 from utils import agy_rpc, discover_local_antigravity_server, extract_json_from_text
@@ -26,7 +26,7 @@ class GeminiRpcReasoner(BaseReasoner):
 
     def __init__(self, config: Dict[str, Any]):
         super().__init__(config)
-        self.model_slug = config.get("model_slug", "gemini-3.8-flash-high")
+        self.model_slug = config.get("model_slug") or DEFAULT_MODEL_SLUG
         self.timeout = config.get("timeout", 600)
         self.poll_interval = config.get("poll_interval", 2.0)
 
@@ -117,7 +117,7 @@ class GeminiRpcReasoner(BaseReasoner):
             start_time = time.time()
             model_reply = ""
             poll_count = 0
-            last_candidate_text = ""
+            last_snapshot = None
             stable_ticks = 0
 
             while time.time() - start_time < self.timeout:
@@ -176,13 +176,6 @@ class GeminiRpcReasoner(BaseReasoner):
                         model_reply = latest_resp_text.replace("===END_OF_LESSON===", "").strip()
                         break
 
-                    # 判定条件 2：JSON 已经完整自然闭合（以 } 或 ``` 结尾）
-                    if latest_resp_text.endswith("}") or latest_resp_text.endswith("```"):
-                        if "{" in latest_resp_text and ("\"questions\"" in latest_resp_text or "'questions'" in latest_resp_text):
-                            logger.info("✅ [GeminiRpcReasoner] 命中 JSON 自然闭合（以 } 结尾），推演完毕！")
-                            model_reply = latest_resp_text
-                            break
-
                     # 判定条件 3：底层明确标记完成状态或明确停机原因
                     is_status_done = latest_status in (
                         "CORTEX_STEP_STATUS_DONE",
@@ -195,26 +188,36 @@ class GeminiRpcReasoner(BaseReasoner):
                     is_finish_stopped = latest_finish_reason in ("STOP", "END_TURN", "FINISH_REASON_STOP", "MAX_TOKENS")
 
                     if is_status_done or is_finish_stopped:
-                        if latest_resp_text == last_candidate_text or is_finish_stopped:
-                            logger.info(
-                                "✅ [GeminiRpcReasoner] 命中完成状态 (status=%s, finish=%s, len=%d)，推演完毕！",
+                        logger.info(
+                            "✅ [GeminiRpcReasoner] 命中完成状态 (status=%s, finish=%s, len=%d)，推演完毕！",
+                            latest_status,
+                            latest_finish_reason,
+                            len(latest_resp_text),
+                        )
+                        model_reply = latest_resp_text
+                        break
+
+                    # 判定条件 4：综合快照稳定检测（同时监控正文、思考长度、步数）
+                    # 若底层仍明确处于 GENERATING 状态，需要连续 30 次轮询 (~60秒) 完全静止才判定僵死退出，
+                    # 彻底避免模型短暂思考/工具停顿 8 秒就被误杀截断！
+                    cur_snapshot = (len(steps), latest_think_len, latest_resp_text)
+                    is_generating = latest_status == "CORTEX_STEP_STATUS_GENERATING"
+                    max_stable_ticks = 30 if is_generating else 6
+
+                    if cur_snapshot == last_snapshot and len(latest_resp_text) > 100:
+                        stable_ticks += 1
+                        if stable_ticks >= max_stable_ticks:
+                            logger.warning(
+                                "⚠️ [GeminiRpcReasoner] 快照已连续 %d 次轮询无任何变化 (status=%s, len=%d)，判定流已结束！",
+                                stable_ticks,
                                 latest_status,
-                                latest_finish_reason,
                                 len(latest_resp_text),
                             )
                             model_reply = latest_resp_text
                             break
-
-                    # 判定条件 4：文本稳定检测（防止某些模型 status 滞后，但流已彻底停更）
-                    if latest_resp_text == last_candidate_text and len(latest_resp_text) > 100:
-                        stable_ticks += 1
-                        if stable_ticks >= 4:
-                            logger.info("✅ [GeminiRpcReasoner] 内容已连续 4 次轮询稳定无变化，判定推演完毕！")
-                            model_reply = latest_resp_text
-                            break
                     else:
                         stable_ticks = 0
-                        last_candidate_text = latest_resp_text
+                        last_snapshot = cur_snapshot
 
             if not model_reply and latest_resp_text:
                 logger.warning("⚠️ [GeminiRpcReasoner] 轮询超时但捕获到了部分文本 (len=%d)，尝试提交自愈解析", len(latest_resp_text))

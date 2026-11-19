@@ -34,9 +34,9 @@
 | 环节 / 角色 | 采用的模型 / 服务 | 核心职责说明 |
 | :--- | :--- | :--- |
 | **阶段 1：Cleaner** | **合合信息 TextIn API** | 智能物理擦除试卷、习题册上的手写笔迹、草稿与干扰红线，输出纯净印刷级题目底图。 |
-| **阶段 2：Transcriber** | **Gemini 3.8 Flash (High/Medium)** | 空间视觉大模型，提取标准 LaTeX 题干与无歧义的空间几何拓扑关系（严禁解题）。 |
-| **阶段 3：Reasoner** | **DeepSeek Pro (`deepseek-v4-pro` / `deepseek-reasoner`)**<br/>或 **Gemini 3.8 Flash High / Gemini 4 Argon High** | 旗舰深度推理大模型，开启完整思维链（Thinking Process），进行几何逻辑证明，构建辅助线与 GeoGebra 指令。 |
-| **极速直连解题** | **Gemini 3.8 Flash High / Gemini 4 Argon High** | 原生多模态看图解题分支（跳过清洗与转录），单次直接完成视觉识别与板书生成。 |
+| **阶段 2：Transcriber** | **Gemini 4 Hydrogen (High/Medium)** | 空间视觉大模型，提取标准 LaTeX 题干与无歧义的空间几何拓扑关系（严禁解题）。 |
+| **阶段 3：Reasoner** | **DeepSeek Pro (`deepseek-v4-pro` / `deepseek-reasoner`)**<br/>或 **Gemini 4 Hydrogen High / Gemini 4 Argon High** | 旗舰深度推理大模型，开启完整思维链（Thinking Process），进行几何逻辑证明，构建辅助线与 GeoGebra 指令。 |
+| **极速直连解题** | **Gemini 4 Hydrogen High / Gemini 4 Argon High** | 原生多模态看图解题分支（跳过清洗与转录），单次直接完成视觉识别与板书生成。 |
 
 ---
 
@@ -59,7 +59,7 @@ flowchart TD
         
         Manager -->|阶段 3: 深度证明与绘图设计| Reasoner
         Reasoner -->|"选项 A: DeepSeek-V4-Pro / Reasoner - 流式思维链"| SolveData["生成微课 JSON 数据"]
-        Reasoner -->|"选项 B: Gemini 3.8 Flash / 4 Argon"| SolveData
+        Reasoner -->|"选项 B: Gemini 4 Hydrogen / 4 Argon"| SolveData
     end
 
     subgraph Frontend ["前端教学主舞台 (viewer.html)"]
@@ -78,14 +78,14 @@ flowchart TD
 ```text
 math-tutor-workspace/
 ├── README.md               # 项目完整技术文档与使用说明
-├── config.json             # 外部全局配置文件（服务端口、流水线插件指定、模型参数等）
-├── config.py               # 全局配置与环境初始化模块（日志、.env 加载、路径常量）
+├── config.json             # 外部全局配置文件（唯一模型配置源：模型列表/映射/默认模型、服务端口、流水线超参数等）
+├── config.py               # 全局配置与环境初始化模块（日志、.env 加载、动态模型配置读取与导出）
 ├── .env.example            # 敏感凭证配置模板示例（TextIn 与 DeepSeek API Key）
 ├── .env                    # 本地私密凭证文件（已配置 .gitignore，严禁提交）
-├── server.py               # 本地 HTTP 服务入口（API 路由、进度状态轮询、取消任务、跨平台保存）
+├── server.py               # 本地 HTTP 服务入口（API 路由、/api/models 配置下发、进度轮询、取消任务、跨平台保存）
 ├── solver.py               # 解题总控调度器（调度多阶段插件流水线、数据持久化）
 ├── prompts.py              # 提词与教学规则库（以 AGENTS.md 为单一信任源，微课 JSON Schema，消除重复注入）
-├── utils.py                # 底层通用工具库（原生 sips 图片瘦身、HTTP 直连/代理工厂、局域网 IP 扫描、四级容错 JSON 自愈引擎）
+├── utils.py                # 底层通用工具库（原生 sips 图片瘦身、HTTP 直连/代理工厂、局域网 IP 扫描、json-repair 状态机自愈引擎）
 ├── viewer.html             # 前端单页 Web 应用（模块化架构：GeoGebra 引擎、Canvas 批注、推演看板、导出弹窗）
 ├── lesson.js               # 当前微课数据本地持久化文件（供前端初次打开秒级回显）
 ├── plugins/                # 模块化插件体系
@@ -110,7 +110,7 @@ math-tutor-workspace/
 
 ### 1. 环境准备
 - **操作系统**：macOS / Windows / Linux
-- **Python 版本**：Python 3.8 及以上（**采用 Python 原生标准库实现，零额外 `pip` 依赖**）
+- **Python 版本**：Python 3.8 及以上（需安装 `json-repair`：`pip3 install json-repair`）
 - **浏览器**：Chrome / Edge / Safari 等现代浏览器
 - **推理客户端（可选）**：若需使用 Gemini 系列模型，请确保本机已运行并登录 **Antigravity** 客户端。
 

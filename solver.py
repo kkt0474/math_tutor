@@ -13,6 +13,7 @@ import json
 from typing import Any, Callable, Dict, Optional
 from config import (
     DEFAULT_MODEL_SLUG,
+    DEFAULT_TRANSCRIPTION_MODEL_SLUG,
     LESSON_JS_PATH,
     get_logger,
     load_app_config,
@@ -27,16 +28,17 @@ def solve_problem_automatically(
     mime_type: str,
     extra_note: str = "",
     model_slug: str = DEFAULT_MODEL_SLUG,
+    enable_cleaning: bool = False,
     enable_transcription: bool = True,
-    transcription_model: str = "gemini-3.8-flash-medium",
+    transcription_model: str = DEFAULT_TRANSCRIPTION_MODEL_SLUG,
     progress_cb: Optional[Callable[[int, str, str, str], None]] = None,
     cancel_check: Optional[Callable[[], bool]] = None,
 ) -> Dict[str, Any]:
     """
-    调度解题流程：
-    - 若选择 DeepSeek 模型：强制开启图转文字，走 TextIn ➔ Gemini转录 ➔ DeepSeek深度证明；
-    - 若选择 Gemini 模型且勾选图转文字：走 TextIn ➔ Gemini转录 ➔ Gemini深度证明；
-    - 若选择 Gemini 模型且未勾选图转文字：跳过 TextIn 与转录，直接 Gemini 原生多模态看图解题。
+    调度解题流程（清洗与转录完全独立）：
+    - 若勾选清洗 (enable_cleaning=True)：前置调用 TextIn 物理擦除手写涂鸦；
+    - 若选择 DeepSeek 模型：强制开启图转文字；
+    - 若关闭图转文字且为 Gemini 模型：直接多模态看图解题。
     """
     cfg = load_app_config()
 
@@ -51,11 +53,12 @@ def solve_problem_automatically(
     pipeline = PipelineManager(cfg)
 
     logger.debug(
-        "[solver] 启动解题调度 | mime=%s | img_bytes=%d | reasoner=%s (%s) | transcribe=%s (%s) | note=%s",
+        "[solver] 启动解题调度 | mime=%s | img_bytes=%d | reasoner=%s (%s) | clean=%s | transcribe=%s (%s) | note=%s",
         mime_type,
         len(image_bytes),
         model_slug,
         cfg["pipeline"]["reasoner_provider"],
+        enable_cleaning,
         enable_transcription,
         transcription_model,
         extra_note,
@@ -66,6 +69,7 @@ def solve_problem_automatically(
         mime_type=mime_type,
         extra_note=extra_note,
         model_override=model_slug,
+        enable_cleaning=enable_cleaning,
         enable_transcription=enable_transcription,
         transcription_model=transcription_model,
         progress_cb=progress_cb,

@@ -80,9 +80,37 @@
    - **解决方案**：
      1. 在 `prompts.py` 尾部引入专属结束信标 `===END_OF_LESSON===`；
      2. 严格校验 `latest_status in DONE/COMPLETED` 或 `latest_finish_reason in STOP/END_TURN/MAX_TOKENS`，并结合 4 次连续文本无变化稳定检测；
-     3. 维持深度推演模型 `gemini-3.8-flash-high`，依托五级 JSON 自愈与精确流式停机检测支撑完整思考与生成闭环；
+     3. 维持深度推演模型 `gemini-4-hydrogen-high`，依托 json-repair 状态机自愈与精确流式停机检测支撑完整思考与生成闭环；
      4. 在 `utils.py` 中升级五级 JSON 自愈管线（阶段 5：括号栈反向闭合与截断数据补全 `repair_truncated_json`），即使输出被意外切断也能完整拯救已生成的几何小问与推导步骤；
      5. 在 `AGENTS.md` 中确立铁律：凡涉及性能影响、推理档位降级等重大权衡修改必须事先征得用户明确同意。
+8. **前端渲染未定义函数抛错被宽泛 catch 误判为“连不上 server”**：
+   - **踩坑风险**：推演全部成功且板书渲染完毕后，在渲染下方思路卡片时调用了未声明的 `escapeHtml(lesson.encouragement)` 触发 `ReferenceError`；由于 `submitProblem` 外层 `catch` 未区分异常类型，一律兜底显示“无法连接后台计算服务”，给用户造成后端掉线假象；
+   - **解决方案**：在 [viewer.html](file:///Users/dean/Documents/math-tutor-workspace/viewer.html) 中补齐 `escapeHtml` 声明；将网络 `fetch` 与前台 DOM 渲染的 `try...catch` 逻辑严格解耦，网络层只报真实连接故障，DOM 渲染层做独立局部保护。
+9. **保存微课无显式反馈 & 独立课件打开白屏卡死体验优化**：
+   - **踩坑与痛点**：
+     1. 保存微课提示原先仅写入右下角侧边栏底部的 `#statusBox`，在独立课件模式下 sidebar 为隐藏状态，弹窗关闭后用户处于屏幕正中心，完全看不到成功/失败反馈；
+     2. 双击打开保存的 `.html` 独立课件时，在 CDN 下载大体积 GeoGebra 引擎（`webSimple.nocache.js` 等）期间，画板区域为原生白色空白方块，用户误以为系统卡死崩溃；
+   - **解决方案**：
+     1. **全局悬浮 Toast 消息系统**：在 [viewer.html](file:///Users/dean/Documents/math-tutor-workspace/viewer.html) 引入毛玻璃顶部居中 Toast 系统（`showToast(html, type, duration, actionBtn)`），保存成功时弹出精致的卡片提示，并附带“📂 在文件夹中查看”快捷按钮；保存失败或未输文件名时同步弹出醒目警告；
+     2. **GeoGebra 沉浸式 Loading 遮罩**：在 `#ggb-wrapper` 内部引入具有深色毛玻璃、数学几何光环、动态进度条的 `#ggbLoadingOverlay`；在引擎 `appletOnLoad` 就绪后平滑淡出（fade out），并设有 12s 超时防焦虑文案；
+     3. **单文件导出清洗与持久化**：在 `buildStandaloneHtmlDoc()` 中重置 Loading 遮罩状态并清空任何 Toast 运行态，确保生成的单文件课件在任意电脑双击打开时，画板第一瞬间展示精致加载动画，加载完毕顺畅淡出。
+10. **引入 `json-repair` 状态机替代零散正则 & DeepSeek 超时兜底逻辑修复**：
+    - **踩坑风险**：
+      1. 依赖零散正则表达式和 `ast.literal_eval` 修补模型随手打错的符号（如分号 `;`、句号 `。`、缺失逗号、嵌套引号、截断）属于治标不治本，且代码冗长重复；
+      2. `deepseek_reasoner.py` 在达到超时上限（正文为 0 字符）时误将打草稿的 `reasoning_content` 当成最终 JSON 传给解析器导致报语法错误；
+    - **解决方案**：
+      1. 引入状态机级的通用修复库 `json-repair`（`0.64.9`），在 [utils.py](file:///Users/dean/Documents/math-tutor-workspace/utils.py) 删除了手写的 `repair_truncated_json()` 及冗长的多阶段正则/`ast.literal_eval` 冗余代码，精简为「阶段 1 标准 `json.loads` ➔ 阶段 2 `_protect_latex_backslashes` + `repair_json` 状态机自愈」两级架构，兼顾 LaTeX 公式无损保护与任意异常符号/截断恢复；
+      2. 在 [deepseek_reasoner.py](file:///Users/dean/Documents/math-tutor-workspace/plugins/reasoners/deepseek_reasoner.py) 剔除把思维链当 JSON 的错误逻辑，补充 `max_tokens: 8192`，并在超时掐断时提供准确直观的人性化提示。
+11. **模型版本单点可配置化改造（方案 A）**：
+    - **背景**：此前升级模型版本需同时修改前端 HTML 与后端 6+ 个文件的硬编码默认值；
+    - **解决方案**：
+      1. 在 [`config.json`](file:///Users/dean/Documents/math-tutor-workspace/config.json) 集中新增 `models` 节点（统一管理 `model_map`、`reasoner_options`、`transcriber_options`）；
+      2. [`config.py`](file:///Users/dean/Documents/math-tutor-workspace/config.py) 导出动态读取函数 `get_frontend_models_config()`、`get_model_id()` 与 `DEFAULT_MODEL_SLUG` / `DEFAULT_TRANSCRIPTION_MODEL_SLUG`，[`server.py`](file:///Users/dean/Documents/math-tutor-workspace/server.py)、[`solver.py`](file:///Users/dean/Documents/math-tutor-workspace/solver.py)、[`pipeline.py`](file:///Users/dean/Documents/math-tutor-workspace/plugins/pipeline.py) 与各插件全面移除模型字符串硬编码；
+      3. 后端新增 `GET /api/models` 接口，[`viewer.html`](file:///Users/dean/Documents/math-tutor-workspace/viewer.html) 启动时自动拉取并渲染模型下拉列表。后续升级或增减模型仅需编辑 [`config.json`](file:///Users/dean/Documents/math-tutor-workspace/config.json) 这 1 个文件即可热生效。
+12. **试卷清洗与图转文字完全解耦**：
+    - **改进内容**：
+      1. 前端 [`viewer.html`](file:///Users/dean/Documents/math-tutor-workspace/viewer.html) 新增独立复选框 **「🧹 是否清洗试卷 (TextIn 去手写涂鸦)」**（默认不勾选，仅勾选时才调用 TextIn），支持与「📝 是否图转文字」自由组合 4 种流水线模式；并优化了 `#dsNotice` 提示的排版防换行挤压；
+      2. 后端 [`server.py`](file:///Users/dean/Documents/math-tutor-workspace/server.py)、[`solver.py`](file:///Users/dean/Documents/math-tutor-workspace/solver.py) 与 [`pipeline.py`](file:///Users/dean/Documents/math-tutor-workspace/plugins/pipeline.py) 透传 `enableCleaning` / `enable_cleaning`，按清洗状态隔离缓存键，并动态更新推演看板的激活阶段条。
 
 ---
 

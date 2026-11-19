@@ -71,6 +71,8 @@
    - 示例：若射线 $ED$ 在上、射线 $EF$ 在下，从 $ED$ 逆时针转到 $EF$ 为 $60^\circ$，必须写 `Angle(D, E, F)`，严禁写成反向的 `Angle(F, E, D)`！（前端同时配有二维叉积 `cross < 0` 自动翻转兜底）。
 4. **仅顶点显示字母标签**：
    - 只有几何顶点（如 `A, B, C, D, E, F`）显示字母标签，对于线段（`Segment`）、多边形（`Polygon`）、角度（`Angle`），均不要显示变量名标签（可通过 `ShowLabel(..., false)` 隐藏）。
+   - **隐藏内部辅助定位点（如延长线端点）**：GeoGebra 中**不存在 `ShowObject(...)` 命令**！如需创建并隐藏延长线端点或辅助定位点，必须使用 **`SetVisibleInView(点名, 1, false)`** 并配合 `ShowLabel(点名, false)`；且命名应尽量避免连续多个下划线（如 `P_CA_end` 会被 GeoGebra 解析为带下标的奇怪字符 $P_C A_e nd$）。
+   - **填充透明度规范**：GeoGebra 中**不存在 `SetOpacity(...)` 命令**！设置多边形/圆的填充透明度必须使用 **`SetFilling(对象名, 透明度小数)`**（例如 `SetFilling(polyABC, 0.12)`）。
 
 ---
 
